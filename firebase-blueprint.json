@@ -22,21 +22,27 @@
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
-        "jerseyNumber": { "type": "integer" },
-        "position": { "type": "string" },
-        "role": { "type": "string" },
-        "age": { "type": "integer" },
-        "nationality": { "type": "string" },
-        "matchesPlayed": { "type": "integer" },
-        "goals": { "type": "integer" },
-        "assists": { "type": "integer" },
-        "cleanSheets": { "type": "integer" },
-        "status": { "type": "string", "enum": ["active", "injured", "suspended"] },
+        "number": { "type": "integer" },
+        "position": { "type": "string", "enum": ["Goalkeeper", "Defender", "Midfielder", "Forward"] },
         "image": { "type": "string" },
+        "nationality": { "type": "string" },
+        "birthDate": { "type": "string" },
+        "height": { "type": "string" },
+        "weight": { "type": "string" },
         "bio": { "type": "string" },
-        "strengths": { "type": "array", "items": { "type": "string" } }
+        "stats": {
+          "type": "object",
+          "properties": {
+            "appearances": { "type": "integer" },
+            "goals": { "type": "integer" },
+            "assists": { "type": "integer" },
+            "cleanSheets": { "type": "integer" },
+            "yellowCards": { "type": "integer" },
+            "redCards": { "type": "integer" }
+          }
+        }
       },
-      "required": ["name", "jerseyNumber", "position", "matchesPlayed", "goals", "assists", "status"]
+      "required": ["name", "number", "position"]
     },
     "Match": {
       "title": "Match",
@@ -44,18 +50,32 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "opponent": { "type": "string" },
+        "homeTeamId": { "type": "string" },
+        "awayTeamId": { "type": "string" },
+        "homeTeamName": { "type": "string" },
+        "awayTeamName": { "type": "string" },
+        "homeScore": { "type": "integer" },
+        "awayScore": { "type": "integer" },
         "date": { "type": "string" },
         "time": { "type": "string" },
         "venue": { "type": "string" },
         "competition": { "type": "string" },
-        "status": { "type": "string", "enum": ["upcoming", "completed", "live"] },
-        "homeScore": { "type": "integer" },
-        "awayScore": { "type": "integer" },
-        "isHome": { "type": "boolean" },
-        "goalScorers": { "type": "array", "items": { "type": "object" } }
+        "status": { "type": "string", "enum": ["upcoming", "live", "completed", "postponed", "cancelled"] },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["goal", "yellow_card", "red_card", "substitution"] },
+              "minute": { "type": "integer" },
+              "playerId": { "type": "string" },
+              "assistId": { "type": "string" },
+              "playerOutId": { "type": "string" }
+            }
+          }
+        }
       },
-      "required": ["opponent", "date", "status", "isHome"]
+      "required": ["opponent", "date", "status"]
     },
     "NewsArticle": {
       "title": "News Article",
@@ -64,28 +84,103 @@
       "properties": {
         "id": { "type": "string" },
         "title": { "type": "string" },
-        "date": { "type": "string" },
-        "image": { "type": "string" },
-        "excerpt": { "type": "string" },
         "content": { "type": "string" },
-        "category": { "type": "string", "enum": ["Match Report", "Announcement", "Update", "Training"] }
+        "image": { "type": "string" },
+        "category": { "type": "string" },
+        "date": { "type": "string" },
+        "author": { "type": "string" }
       },
-      "required": ["title", "date", "category"]
+      "required": ["title", "content", "date"]
     },
-    "Registration": {
-      "title": "Tournament Registration",
-      "description": "Registration details for tournament entry.",
+    "Competition": {
+      "title": "Competition",
+      "description": "Leagues or tournaments the club participates in.",
       "type": "object",
       "properties": {
-        "userId": { "type": "string" },
-        "registrationId": { "type": "string" },
-        "tournamentName": { "type": "string" },
-        "feePaid": { "type": "number" },
-        "currency": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "confirmed", "failed"] },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "season": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "type": { "type": "string", "enum": ["league", "cup", "tournament"] },
+        "active": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["active", "completed", "upcoming"] }
       },
-      "required": ["userId", "tournamentName", "feePaid", "status"]
+      "required": ["name", "season", "type"]
+    },
+    "Trophy": {
+      "title": "Trophy",
+      "description": "Club achievements and trophies.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "competition": { "type": "string" },
+        "season": { "type": "string" },
+        "image": { "type": "string" },
+        "achievement": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["competition", "season", "achievement"]
+    },
+    "Team": {
+      "title": "Team",
+      "description": "Opponent teams or club's own teams.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "shortName": { "type": "string" },
+        "logo": { "type": "string" },
+        "image": { "type": "string" },
+        "color": { "type": "string" },
+        "secondaryColor": { "type": "string" },
+        "captainId": { "type": "string" },
+        "coach": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] }
+      },
+      "required": ["name", "shortName"]
+    },
+    "GalleryImage": {
+      "title": "Gallery Image",
+      "description": "Images in the club gallery.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "url": { "type": "string" },
+        "caption": { "type": "string" },
+        "category": { "type": "string" },
+        "date": { "type": "string" }
+      },
+      "required": ["url"]
+    },
+    "ClubSettings": {
+      "title": "Club Settings",
+      "description": "Global configuration and info for the club.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "shortName": { "type": "string" },
+        "founded": { "type": "string" },
+        "logo": { "type": "string" },
+        "primaryColor": { "type": "string" },
+        "secondaryColor": { "type": "string" },
+        "stadium": { "type": "string" },
+        "ground": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "address": { "type": "string" },
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" },
+            "mapsUrl": { "type": "string" }
+          }
+        },
+        "history": { "type": "string" },
+        "vision": { "type": "string" },
+        "mission": { "type": "string" },
+        "socials": { "type": "object" },
+        "contact": { "type": "object" }
+      }
     }
   },
   "firestore": {
@@ -105,9 +200,25 @@
       "schema": "NewsArticle",
       "description": "News articles."
     },
-    "/registrations/{registrationId}": {
-      "schema": "Registration",
-      "description": "Tournament registrations."
+    "/teams/{teamId}": {
+      "schema": "Team",
+      "description": "Opponent and club teams."
+    },
+    "/competitions/{compId}": {
+      "schema": "Competition",
+      "description": "Football competitions."
+    },
+    "/trophies/{trophyId}": {
+      "schema": "Trophy",
+      "description": "Club trophies."
+    },
+    "/gallery/{imageId}": {
+      "schema": "GalleryImage",
+      "description": "Gallery images."
+    },
+    "/settings/club": {
+      "schema": "ClubSettings",
+      "description": "Global club settings (single document)."
     }
   }
 }

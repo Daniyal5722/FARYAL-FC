@@ -1,1 +1,99 @@
-[]
+[
+  {
+    "id": "match-1",
+    "homeTeamId": "team-1",
+    "awayTeamId": "team-2",
+    "homeTeamName": "Faryal FC",
+    "awayTeamName": "Model Town FC",
+    "date": "2026-03-15",
+    "time": "18:00",
+    "venue": "Faryal FC Ground",
+    "competition": "Karachi Elite League",
+    "status": "completed",
+    "homeScore": 3,
+    "awayScore": 1,
+    "events": [
+      {
+        "id": "ev-1",
+        "type": "goal",
+        "minute": 18,
+        "playerId": "player-3",
+        "assistId": "player-5"
+      },
+      {
+        "id": "ev-2",
+        "type": "goal",
+        "minute": 42,
+        "playerId": "player-4",
+        "assistId": "player-3"
+      },
+      {
+        "id": "ev-3",
+        "type": "goal",
+        "minute": 74,
+        "playerId": "player-3",
+        "assistId": "player-5"
+      }
+    ]
+  },
+  {
+    "id": "match-2",
+    "homeTeamId": "team-3",
+    "awayTeamId": "team-1",
+    "homeTeamName": "Karachi City FC",
+    "awayTeamName": "Faryal FC",
+    "date": "2026-03-22",
+    "time": "19:30",
+    "venue": "Karachi City Complex",
+    "competition": "Karachi Elite League",
+    "status": "completed",
+    "homeScore": 1,
+    "awayScore": 2,
+    "events": [
+      {
+        "id": "ev-4",
+        "type": "goal",
+        "minute": 31,
+        "playerId": "player-5",
+        "assistId": "player-4"
+      },
+      {
+        "id": "ev-5",
+        "type": "goal",
+        "minute": 88,
+        "playerId": "player-3",
+        "assistId": "player-6"
+      }
+    ]
+  },
+  {
+    "id": "match-3",
+    "homeTeamId": "team-1",
+    "awayTeamId": "team-4",
+    "homeTeamName": "Faryal FC",
+    "awayTeamName": "Airport United",
+    "date": "2026-04-05",
+    "time": "18:30",
+    "venue": "Faryal FC Ground",
+    "competition": "Karachi Elite League",
+    "status": "upcoming",
+    "homeScore": 0,
+    "awayScore": 0,
+    "events": []
+  },
+  {
+    "id": "match-4",
+    "homeTeamId": "team-5",
+    "awayTeamId": "team-1",
+    "homeTeamName": "Malir Strikers",
+    "awayTeamName": "Faryal FC",
+    "date": "2026-04-12",
+    "time": "17:00",
+    "venue": "Malir Sports Arena",
+    "competition": "Karachi Elite League",
+    "status": "upcoming",
+    "homeScore": 0,
+    "awayScore": 0,
+    "events": []
+  }
+]

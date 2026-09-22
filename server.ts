@@ -2,53 +2,186 @@ import express from "express";
 import path from "path";
 import fs from "fs/promises";
 import { createServer as createViteServer } from "vite";
+import { initializeApp, getApps, getApp } from "firebase-admin/app";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
+
+// Initialize Firebase Admin
+import firebaseConfig from "./firebase-applet-config.json";
+
+let app: any;
+try {
+  app = getApps().length > 0 ? getApp() : initializeApp({
+    projectId: firebaseConfig.projectId
+  });
+} catch (e) {
+  console.warn('Firebase Admin app initialization warning:', e);
+  app = getApps().length > 0 ? getApp() : initializeApp();
+}
+
+const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || 'ai-studio-faryalfc-f96a0aa8-dbbf-46a6-8a84-6432723334dc');
+const auth = getAuth(app);
 
 const PORT = 3000;
-const DATA_DIR = path.join(process.cwd(), "data");
 
-async function ensureDataDir() {
+// Auth Middleware
+const authenticate = async (req: any, res: any, next: any) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    req.user = null;
+    return next();
+  }
+
+  const token = authHeader.split(' ')[1];
   try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
+    const decodedToken = await auth.verifyIdToken(token);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    console.error('Auth Error:', error);
+    res.status(401).json({ 
+      error: 'Unauthorized',
+      message: 'Invalid or expired token',
+      code: 'auth/unauthorized'
+    });
+  }
+};
+
+const BOOTSTRAPPED_ADMIN = 'mdaniyalhayyat@gmail.com';
+
+const requireAdmin = async (req: any, res: any, next: any) => {
+  if (!req.user) {
+    return res.status(401).json({ 
+      error: 'Unauthorized',
+      message: 'Authentication required',
+      code: 'auth/required'
+    });
+  }
+  
+  const isBootstrappedAdmin = req.user.email === BOOTSTRAPPED_ADMIN;
+  if (isBootstrappedAdmin) return next();
+
+  try {
+    const adminDoc = await db.collection('admins').doc(req.user.uid).get();
+    if (adminDoc.exists) {
+      return next();
+    }
+    res.status(403).json({ 
+      error: 'Forbidden',
+      message: 'Administrator privileges required',
+      code: 'auth/forbidden'
+    });
   } catch (err) {
-    console.error("Error creating data directory", err);
+    console.error('Error checking admin status:', err);
+    res.status(500).json({ 
+      error: 'Internal Server Error',
+      message: 'Failed to verify permissions'
+    });
+  }
+};
+
+// Validation Schemas
+const schemas: Record<string, string[]> = {
+  teams: ["name", "shortName", "logo", "image", "color", "secondaryColor", "captainId", "coach", "status"],
+  players: ["name", "number", "position", "image", "nationality", "birthDate", "height", "weight", "bio", "stats", "status"],
+  matches: ["homeTeamId", "awayTeamId", "homeTeamName", "awayTeamName", "date", "time", "venue", "competition", "status", "homeScore", "awayScore", "events"],
+  news: ["title", "content", "image", "category", "date", "author"],
+  competitions: ["name", "season", "startDate", "endDate", "type", "active", "status"],
+  trophies: ["competition", "season", "image", "achievement", "description"],
+  gallery: ["url", "caption", "category", "date"]
+};
+
+function validateBody(collection: string, body: any) {
+  const allowedKeys = schemas[collection];
+  if (!allowedKeys) return;
+
+  const bodyKeys = Object.keys(body);
+  const invalidKeys = bodyKeys.filter(key => !allowedKeys.includes(key));
+  
+  if (invalidKeys.length > 0) {
+    throw new Error(`Invalid fields: ${invalidKeys.join(', ')}`);
   }
 }
 
-async function readData(filename: string) {
-  const filePath = path.join(DATA_DIR, filename);
-  try {
-    const data = await fs.readFile(filePath, "utf-8");
-    return JSON.parse(data);
-  } catch (err) {
-    return [];
-  }
-}
-
-async function writeData(filename: string, data: any) {
-  const filePath = path.join(DATA_DIR, filename);
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+function handleApiError(res: any, error: any, context: string) {
+  console.error(`API Error [${context}]:`, error);
+  const status = error.message.startsWith('Invalid fields') ? 400 : 500;
+  res.status(status).json({
+    error: status === 400 ? 'Bad Request' : 'Internal Server Error',
+    message: error.message || 'An unexpected error occurred',
+    context
+  });
 }
 
 async function startServer() {
-  await ensureDataDir();
   const app = express();
   app.use(express.json());
+  app.use(authenticate);
 
   // Generic CRUD endpoints
   const collections = ["teams", "players", "matches", "news", "competitions", "trophies", "gallery"];
 
-  // Specific Player API with dynamic stats (needs to be defined before generic GET)
-  app.get('/api/players', async (req, res) => {
-    const players = await readData('players.json');
-    const matches = await readData('matches.json');
+  // Specific Player API with dynamic stats
+  app.get('/api/players', async (req: any, res: any) => {
+    try {
+      const playersSnapshot = await db.collection('players').get();
+      const players = playersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      const matchesSnapshot = await db.collection('matches').where('status', '==', 'completed').get();
+      const matches = matchesSnapshot.docs.map(doc => doc.data());
 
-    const playersWithStats = players.map((player: any) => {
+      const playersWithStats = players.map((player: any) => {
+        let goals = 0, assists = 0, yellowCards = 0, redCards = 0, appearances = 0;
+
+        matches.forEach((match: any) => {
+          const participated = match.events?.some((e: any) => e.playerId === player.id || e.assistId === player.id);
+          if (participated) appearances++;
+
+          if (match.events) {
+            match.events.forEach((event: any) => {
+              if (event.playerId === player.id) {
+                if (event.type === 'goal') goals++;
+                if (event.type === 'yellow_card') yellowCards++;
+                if (event.type === 'red_card') redCards++;
+              }
+              if (event.assistId === player.id) {
+                assists++;
+              }
+            });
+          }
+        });
+
+        return {
+          ...player,
+          stats: {
+            appearances,
+            goals,
+            assists,
+            yellowCards,
+            redCards,
+            cleanSheets: player.stats?.cleanSheets || 0
+          }
+        };
+      });
+
+      res.json(playersWithStats);
+    } catch (error) {
+      handleApiError(res, error, 'GET_PLAYERS');
+    }
+  });
+
+  app.get('/api/players/:id', async (req: any, res: any) => {
+    try {
+      const playerDoc = await db.collection('players').doc(req.params.id).get();
+      if (!playerDoc.exists) return res.status(404).json({ error: "Not found", message: "Player not found" });
+      const player: any = { id: playerDoc.id, ...playerDoc.data() };
+
+      const matchesSnapshot = await db.collection('matches').where('status', '==', 'completed').get();
+      const matches = matchesSnapshot.docs.map(doc => doc.data());
+      
       let goals = 0, assists = 0, yellowCards = 0, redCards = 0, appearances = 0;
 
       matches.forEach((match: any) => {
-        if (match.status !== 'completed') return;
-        
-        // Count appearances (if player in events or eventually in lineup)
         const participated = match.events?.some((e: any) => e.playerId === player.id || e.assistId === player.id);
         if (participated) appearances++;
 
@@ -66,7 +199,7 @@ async function startServer() {
         }
       });
 
-      return {
+      res.json({
         ...player,
         stats: {
           appearances,
@@ -76,184 +209,185 @@ async function startServer() {
           redCards,
           cleanSheets: player.stats?.cleanSheets || 0
         }
-      };
-    });
-
-    res.json(playersWithStats);
-  });
-
-  app.get('/api/players/:id', async (req, res) => {
-    const players = await readData('players.json');
-    const player = players.find((p: any) => p.id === req.params.id);
-    if (!player) return res.status(404).json({ error: "Not found" });
-
-    const matches = await readData('matches.json');
-    let goals = 0, assists = 0, yellowCards = 0, redCards = 0, appearances = 0;
-
-    matches.forEach((match: any) => {
-      if (match.status !== 'completed') return;
-      
-      const participated = match.events?.some((e: any) => e.playerId === player.id || e.assistId === player.id);
-      if (participated) appearances++;
-
-      if (match.events) {
-        match.events.forEach((event: any) => {
-          if (event.playerId === player.id) {
-            if (event.type === 'goal') goals++;
-            if (event.type === 'yellow_card') yellowCards++;
-            if (event.type === 'red_card') redCards++;
-          }
-          if (event.assistId === player.id) {
-            assists++;
-          }
-        });
-      }
-    });
-
-    res.json({
-      ...player,
-      stats: {
-        appearances,
-        goals,
-        assists,
-        yellowCards,
-        redCards,
-        cleanSheets: player.stats?.cleanSheets || 0
-      }
-    });
+      });
+    } catch (error) {
+      handleApiError(res, error, 'GET_PLAYER_BY_ID');
+    }
   });
 
   collections.forEach((collection) => {
-    const filename = `${collection}.json`;
-
-    // Skip GET if it's players (handled above)
     if (collection !== 'players') {
       app.get(`/api/${collection}`, async (req, res) => {
-        const data = await readData(filename);
-        res.json(data);
+        try {
+          const snapshot = await db.collection(collection).get();
+          const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          res.json(data);
+        } catch (error) {
+          res.status(500).json({ error: 'Internal Server Error' });
+        }
       });
 
       app.get(`/api/${collection}/:id`, async (req, res) => {
-        const data = await readData(filename);
-        const item = data.find((i: any) => i.id === req.params.id);
-        if (item) res.json(item);
-        else res.status(404).json({ error: "Not found" });
+        try {
+          const doc = await db.collection(collection).doc(req.params.id).get();
+          if (doc.exists) res.json({ id: doc.id, ...doc.data() });
+          else res.status(404).json({ error: "Not found" });
+        } catch (error) {
+          res.status(500).json({ error: 'Internal Server Error' });
+        }
       });
     }
 
-    app.post(`/api/${collection}`, async (req, res) => {
-      const data = await readData(filename);
-      const prefix = collection === 'matches' ? 'match_' : '';
-      const newItem = { ...req.body, id: req.body.id || `${prefix}${Date.now()}` };
-      data.push(newItem);
-      await writeData(filename, data);
-      res.status(201).json(newItem);
-    });
-
-    app.put(`/api/${collection}/:id`, async (req, res) => {
-      const data = await readData(filename);
-      const index = data.findIndex((item: any) => item.id === req.params.id);
-      if (index !== -1) {
-        data[index] = { ...data[index], ...req.body };
-        await writeData(filename, data);
-        res.json(data[index]);
-      } else {
-        res.status(404).json({ error: "Not found" });
+    app.post(`/api/${collection}`, requireAdmin, async (req: any, res: any) => {
+      try {
+        validateBody(collection, req.body);
+        const docRef = await db.collection(collection).add({
+          ...req.body,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp()
+        });
+        const doc = await docRef.get();
+        res.status(201).json({ id: doc.id, ...doc.data() });
+      } catch (error) {
+        handleApiError(res, error, `CREATE_${collection.toUpperCase()}`);
       }
     });
 
-    app.delete(`/api/${collection}/:id`, async (req, res) => {
-      const data = await readData(filename);
-      const newData = data.filter((item: any) => item.id !== req.params.id);
-      await writeData(filename, newData);
-      res.status(204).send();
+    app.put(`/api/${collection}/:id`, requireAdmin, async (req: any, res: any) => {
+      try {
+        validateBody(collection, req.body);
+        await db.collection(collection).doc(req.params.id).update({
+          ...req.body,
+          updatedAt: FieldValue.serverTimestamp()
+        });
+        const doc = await db.collection(collection).doc(req.params.id).get();
+        res.json({ id: doc.id, ...doc.data() });
+      } catch (error) {
+        handleApiError(res, error, `UPDATE_${collection.toUpperCase()}`);
+      }
+    });
+
+    app.delete(`/api/${collection}/:id`, requireAdmin, async (req: any, res: any) => {
+      try {
+        await db.collection(collection).doc(req.params.id).delete();
+        res.status(204).send();
+      } catch (error) {
+        handleApiError(res, error, `DELETE_${collection.toUpperCase()}`);
+      }
     });
   });
 
   // Settings endpoint
   app.get("/api/settings", async (req, res) => {
-    const filePath = path.join(DATA_DIR, "settings.json");
     try {
-      const data = await fs.readFile(filePath, "utf-8");
-      res.json(JSON.parse(data));
-    } catch (err) {
-      const defaultSettings = {
-        name: 'Faryal FC',
-        shortName: 'FFC',
-        founded: '2024',
-        logo: '',
-        primaryColor: '#3b82f6',
-        secondaryColor: '#1e293b',
-        stadium: 'Faryal Ground',
-        ground: {
-          name: 'Faryal FC Ground',
-          address: '20-A Main Rd, Model Colony Block 24 Model Colony, Karachi, 75080, Pakistan',
-          latitude: 24.903822,
-          longitude: 67.194202,
-          mapsUrl: 'https://share.google/WntzBRDQxKW4EUPPI'
-        },
-        history: '',
-        vision: '',
-        mission: '',
-        socials: {},
-        contact: { email: '', phone: '', address: '' }
-      };
-      await writeData("settings.json", defaultSettings);
-      res.json(defaultSettings);
+      const doc = await db.collection('settings').doc('club').get();
+      if (doc.exists) {
+        res.json(doc.data());
+      } else {
+        const defaultSettings = {
+          name: "Faryal FC",
+          shortName: "FFC",
+          founded: "2024",
+          logo: "/logo.png",
+          primaryColor: "#002d62",
+          secondaryColor: "#ffffff",
+          stadium: "Faryal Ground",
+          ground: {
+            name: "Faryal FC Ground",
+            address: "20-A Main Rd, Model Colony Block 24 Model Colony, Karachi, 75080, Pakistan",
+            latitude: 24.903822,
+            longitude: 67.194202,
+            mapsUrl: "https://share.google/WntzBRDQxKW4EUPPI"
+          },
+          history: "Faryal FC was established in 2024 with a vision to build a world-class footballing community. Starting from local roots in Karachi, the club has quickly grown into a competitive force, emphasizing youth development, tactical excellence, and a spirit that never says die.",
+          vision: "To become the premier destination for footballing talent in the region.",
+          mission: "To develop technically gifted players who play with passion and integrity.",
+          socials: {
+            instagram: "https://instagram.com/faryalfc",
+            facebook: "https://facebook.com/faryalfc",
+            whatsapp: "https://wa.me/923000000000"
+          },
+          contact: {
+            email: "info@faryalfc.com",
+            phone: "+92 300 000 0000",
+            address: "20-A Main Rd, Model Colony, Karachi, Pakistan"
+          }
+        };
+        await db.collection('settings').doc('club').set(defaultSettings);
+        res.json(defaultSettings);
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Internal Server Error' });
     }
   });
 
-  app.put("/api/settings", async (req, res) => {
-    await writeData("settings.json", req.body);
-    res.json(req.body);
+  app.put("/api/settings", requireAdmin, async (req: any, res: any) => {
+    try {
+      const allowedSettingsKeys = ["name", "shortName", "founded", "logo", "primaryColor", "secondaryColor", "stadium", "ground", "history", "vision", "mission", "socials", "contact"];
+      const invalidKeys = Object.keys(req.body).filter(key => !allowedSettingsKeys.includes(key));
+      if (invalidKeys.length > 0) {
+        return res.status(400).json({ error: "Bad Request", message: `Invalid fields: ${invalidKeys.join(', ')}` });
+      }
+
+      await db.collection('settings').doc('club').set(req.body, { merge: true });
+      res.json(req.body);
+    } catch (error) {
+      handleApiError(res, error, 'UPDATE_SETTINGS');
+    }
   });
 
   // Standings calculation endpoint
-  app.get("/api/standings", async (req, res) => {
-    const teams = await readData("teams.json");
-    const matches = await readData("matches.json");
-    
-    const stats = teams.map((team: any) => {
-      const teamMatches = matches.filter((m: any) => 
-        m.status === 'completed' && (m.homeTeamId === team.id || m.awayTeamId === team.id)
-      );
+  app.get("/api/standings", async (req: any, res: any) => {
+    try {
+      const teamsSnapshot = await db.collection('teams').get();
+      const teams = teamsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      const matchesSnapshot = await db.collection('matches').where('status', '==', 'completed').get();
+      const matches = matchesSnapshot.docs.map(doc => doc.data());
+      
+      const stats = teams.map((team: any) => {
+        const teamMatches = matches.filter((m: any) => 
+          m.homeTeamId === team.id || m.awayTeamId === team.id
+        );
 
-      let wins = 0, draws = 0, losses = 0, gf = 0, ga = 0;
+        let wins = 0, draws = 0, losses = 0, gf = 0, ga = 0;
 
-      teamMatches.forEach((m: any) => {
-        const isHome = m.homeTeamId === team.id;
-        const teamScore = isHome ? m.homeScore : m.awayScore;
-        const oppScore = isHome ? m.awayScore : m.homeScore;
+        teamMatches.forEach((m: any) => {
+          const isHome = m.homeTeamId === team.id;
+          const teamScore = isHome ? m.homeScore : m.awayScore;
+          const oppScore = isHome ? m.awayScore : m.homeScore;
 
-        gf += teamScore;
-        ga += oppScore;
+          gf += teamScore;
+          ga += oppScore;
 
-        if (teamScore > oppScore) wins++;
-        else if (teamScore === oppScore) draws++;
-        else losses++;
+          if (teamScore > oppScore) wins++;
+          else if (teamScore === oppScore) draws++;
+          else losses++;
+        });
+
+        return {
+          ...team,
+          played: teamMatches.length,
+          wins,
+          draws,
+          losses,
+          goalsFor: gf,
+          goalsAgainst: ga,
+          goalDifference: gf - ga,
+          points: (wins * 3) + draws
+        };
       });
 
-      return {
-        ...team,
-        played: teamMatches.length,
-        wins,
-        draws,
-        losses,
-        goalsFor: gf,
-        goalsAgainst: ga,
-        goalDifference: gf - ga,
-        points: (wins * 3) + draws
-      };
-    });
+      const sorted = stats.sort((a: any, b: any) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+        return b.goalsFor - a.goalsFor;
+      });
 
-    // Sort by points, then GD, then GF
-    const sorted = stats.sort((a: any, b: any) => {
-      if (b.points !== a.points) return b.points - a.points;
-      if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
-      return b.goalsFor - a.goalsFor;
-    });
-
-    res.json(sorted);
+      res.json(sorted);
+    } catch (error) {
+      handleApiError(res, error, 'GET_STANDINGS');
+    }
   });
 
   // Vite middleware for development

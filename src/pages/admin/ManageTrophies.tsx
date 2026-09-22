@@ -9,6 +9,7 @@ export const ManageTrophies: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<TrophyType>>({
     competition: '',
     season: '2024/25',
@@ -18,11 +19,13 @@ export const ManageTrophies: React.FC = () => {
   });
 
   const fetchData = async () => {
+    setError(null);
     try {
       const data = await api.trophies.getAll();
       setTrophies(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching trophies:', err);
+      setError(err.message || 'Failed to load trophies');
     } finally {
       setLoading(false);
     }
@@ -34,6 +37,7 @@ export const ManageTrophies: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     try {
       if (editingId) {
         await api.trophies.update(editingId, formData);
@@ -44,18 +48,21 @@ export const ManageTrophies: React.FC = () => {
       setEditingId(null);
       setFormData({ competition: '', season: '2024/25', image: '', achievement: 'Winner', description: '' });
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving trophy:', err);
+      setError(err.message || 'Failed to save trophy');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Delete this trophy record?')) return;
+    setError(null);
     try {
       await api.trophies.delete(id);
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting trophy:', err);
+      setError(err.message || 'Failed to delete trophy');
     }
   };
 
@@ -84,6 +91,19 @@ export const ManageTrophies: React.FC = () => {
             <Plus size={16} /> Add Trophy
           </button>
         </div>
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-500 text-sm font-bold flex items-center justify-between"
+          >
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="p-1 hover:bg-red-500/20 rounded-lg transition-colors">
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {trophies.map((trophy) => (

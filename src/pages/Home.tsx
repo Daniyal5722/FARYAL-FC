@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { 
   ArrowRight, Trophy, Star, Users, Zap, Loader2, 
   Calendar, MapPin, Award, Instagram, Facebook, Twitter, Mail, Phone,
-  TrendingUp, Activity, Target
+  TrendingUp, Activity, Target, Clock
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useClubSettings } from '../hooks/useClubSettings';

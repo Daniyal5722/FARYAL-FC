@@ -1,1 +1,128 @@
-[]
+[
+  {
+    "id": "player-1",
+    "name": "Hamza Tariq",
+    "number": 1,
+    "position": "Goalkeeper",
+    "image": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400&auto=format&fit=crop",
+    "nationality": "Pakistan",
+    "birthDate": "1998-04-12",
+    "height": "188 cm",
+    "weight": "82 kg",
+    "bio": "First-choice goalkeeper and vice-captain with exceptional reflexes and commanding aerial presence.",
+    "stats": {
+      "appearances": 6,
+      "goals": 0,
+      "assists": 0,
+      "cleanSheets": 3,
+      "yellowCards": 0,
+      "redCards": 0
+    },
+    "status": "active"
+  },
+  {
+    "id": "player-2",
+    "name": "Bilal Ahmed",
+    "number": 4,
+    "position": "Defender",
+    "image": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop",
+    "nationality": "Pakistan",
+    "birthDate": "2000-08-19",
+    "height": "185 cm",
+    "weight": "79 kg",
+    "bio": "Solid central defender with exceptional tackling and tactical awareness.",
+    "stats": {
+      "appearances": 6,
+      "goals": 1,
+      "assists": 0,
+      "cleanSheets": 3,
+      "yellowCards": 1,
+      "redCards": 0
+    },
+    "status": "active"
+  },
+  {
+    "id": "player-3",
+    "name": "Daniyal Hayyat",
+    "number": 10,
+    "position": "Forward",
+    "image": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=400&auto=format&fit=crop",
+    "nationality": "Pakistan",
+    "birthDate": "2001-03-15",
+    "height": "178 cm",
+    "weight": "73 kg",
+    "bio": "Club captain and talismanic playmaker, known for lethal finishing and creative vision.",
+    "stats": {
+      "appearances": 6,
+      "goals": 7,
+      "assists": 4,
+      "cleanSheets": 0,
+      "yellowCards": 1,
+      "redCards": 0
+    },
+    "status": "active"
+  },
+  {
+    "id": "player-4",
+    "name": "Zain Ul Abideen",
+    "number": 8,
+    "position": "Midfielder",
+    "image": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=400&auto=format&fit=crop",
+    "nationality": "Pakistan",
+    "birthDate": "2002-11-05",
+    "height": "175 cm",
+    "weight": "70 kg",
+    "bio": "Box-to-box midfielder with relentless stamina and dynamic passing range.",
+    "stats": {
+      "appearances": 6,
+      "goals": 3,
+      "assists": 3,
+      "cleanSheets": 0,
+      "yellowCards": 2,
+      "redCards": 0
+    },
+    "status": "active"
+  },
+  {
+    "id": "player-5",
+    "name": "Saad Khan",
+    "number": 7,
+    "position": "Forward",
+    "image": "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?q=80&w=400&auto=format&fit=crop",
+    "nationality": "Pakistan",
+    "birthDate": "2003-01-22",
+    "height": "176 cm",
+    "weight": "68 kg",
+    "bio": "Electric winger known for blistering pace, quick stepovers, and accurate crosses.",
+    "stats": {
+      "appearances": 6,
+      "goals": 3,
+      "assists": 5,
+      "cleanSheets": 0,
+      "yellowCards": 0,
+      "redCards": 0
+    },
+    "status": "active"
+  },
+  {
+    "id": "player-6",
+    "name": "Usman Malik",
+    "number": 5,
+    "position": "Defender",
+    "image": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=400&auto=format&fit=crop",
+    "nationality": "Pakistan",
+    "birthDate": "1999-07-30",
+    "height": "183 cm",
+    "weight": "78 kg",
+    "bio": "Aggressive center-back who organizes the defensive line with authority.",
+    "stats": {
+      "appearances": 5,
+      "goals": 0,
+      "assists": 1,
+      "cleanSheets": 2,
+      "yellowCards": 2,
+      "redCards": 0
+    },
+    "status": "active"
+  }
+]

@@ -9,6 +9,7 @@ export const ManageTeams: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Team>>({
     name: '',
     shortName: '',
@@ -33,11 +34,13 @@ export const ManageTeams: React.FC = () => {
   }, []);
 
   const fetchTeams = async () => {
+    setError(null);
     try {
       const data = await api.teams.getAll();
       setTeams(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching teams:', err);
+      setError(err.message || 'Failed to load teams');
     } finally {
       setLoading(false);
     }
@@ -73,6 +76,7 @@ export const ManageTeams: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     try {
       if (editingTeam) {
         await api.teams.update(editingTeam.id, formData);
@@ -81,18 +85,21 @@ export const ManageTeams: React.FC = () => {
       }
       setIsModalOpen(false);
       fetchTeams();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving team:', err);
+      setError(err.message || 'Failed to save team');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this team? All associated records may be affected.')) {
+      setError(null);
       try {
         await api.teams.delete(id);
         fetchTeams();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error deleting team:', err);
+        setError(err.message || 'Failed to delete team');
       }
     }
   };
@@ -114,6 +121,22 @@ export const ManageTeams: React.FC = () => {
             <Plus size={20} /> Add New Team
           </button>
         </div>
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-500 text-sm font-bold flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <AlertCircle size={18} />
+              <span>{error}</span>
+            </div>
+            <button onClick={() => setError(null)} className="p-1 hover:bg-red-500/20 rounded-lg transition-colors">
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
 
         {/* Teams List */}
         <div className="grid grid-cols-1 gap-4">

@@ -144,3 +144,11 @@ export interface GroundInfo {
 }
 
 export type FormationType = '4-4-2' | '4-3-3' | '4-2-3-1' | '3-5-2' | '3-4-3' | '5-3-2';
+
+export interface GalleryItem {
+  id: string;
+  url: string;
+  caption: string;
+  category: string;
+  date?: string;
+}

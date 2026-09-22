@@ -1,0 +1,18 @@
+[
+  {
+    "id": "trophy-1",
+    "competition": "Karachi Championship",
+    "season": "2024/25",
+    "image": "https://images.unsplash.com/photo-1578269174936-2709b6aeb913?q=80&w=400&auto=format&fit=crop",
+    "achievement": "Champions",
+    "description": "Inaugural championship victory following an unbeaten 10-match streak in the playoffs."
+  },
+  {
+    "id": "trophy-2",
+    "competition": "Model Colony Winter Cup",
+    "season": "2025",
+    "image": "https://images.unsplash.com/photo-1569517282132-25d22f4573e6?q=80&w=400&auto=format&fit=crop",
+    "achievement": "Winners",
+    "description": "Dramatic penalty shootout victory in front of a packed home crowd."
+  }
+]

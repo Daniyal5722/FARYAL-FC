@@ -9,6 +9,7 @@ export const ManagePlayers: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Partial<Player>>({
     name: '',
@@ -33,11 +34,13 @@ export const ManagePlayers: React.FC = () => {
   }, []);
 
   const fetchPlayers = async () => {
+    setError(null);
     try {
       const data = await api.players.getAll();
       setPlayers(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching players:', err);
+      setError(err.message || 'Failed to load players');
     } finally {
       setLoading(false);
     }
@@ -72,6 +75,7 @@ export const ManagePlayers: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     try {
       if (editingPlayer) {
         await api.players.update(editingPlayer.id, formData);
@@ -80,18 +84,21 @@ export const ManagePlayers: React.FC = () => {
       }
       setIsModalOpen(false);
       fetchPlayers();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving player:', err);
+      setError(err.message || 'Failed to save player');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to remove this player?')) {
+      setError(null);
       try {
         await api.players.delete(id);
         fetchPlayers();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error deleting player:', err);
+        setError(err.message || 'Failed to delete player');
       }
     }
   };
@@ -113,6 +120,19 @@ export const ManagePlayers: React.FC = () => {
             <Plus size={20} /> Add New Player
           </button>
         </div>
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-500 text-sm font-bold flex items-center justify-between"
+          >
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="p-1 hover:bg-red-500/20 rounded-lg transition-colors">
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
 
         {/* Players List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

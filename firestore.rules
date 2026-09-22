@@ -3,6 +3,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // ---------------------------------------------------------
+    // Global Deny
+    // ---------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------
     // Reusable Primitives & Helpers
     // ---------------------------------------------------------
     function isSignedIn() {
@@ -13,12 +20,7 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email_verified == true;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
     function isAdmin() {
-      // Bootstrapped admin from runtime metadata
       return isSignedIn() && (
         request.auth.token.email == 'mdaniyalhayyat@gmail.com' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
@@ -41,87 +43,102 @@ service cloud.firestore {
     // Entity Validation Helpers
     // ---------------------------------------------------------
 
-    function isValidUser(data) {
-      return data.keys().hasAll(['uid', 'email', 'role']) &&
-             data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'role', 'createdAt', 'updatedAt']) &&
-             data.uid == request.auth.uid &&
-             data.email is string && data.email.size() <= 256 &&
-             data.role in ['admin', 'member'] &&
-             (data.role == 'member' || isAdmin()); // Only admins can create admin users
+    function isValidPlayer(data) {
+      let requiredFields = ['name', 'number', 'position'];
+      let allowedFields = ['name', 'number', 'position', 'image', 'nationality', 'birthDate', 'height', 'weight', 'bio', 'stats', 'status', 'createdAt', 'updatedAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allowedFields) &&
+             data.name is string && data.name.size() <= 100 &&
+             data.number is number &&
+             data.position is string &&
+             (!('status' in data) || data.status in ['active', 'injured', 'suspended', 'inactive']);
     }
 
-    function isValidPlayer(data) {
-      return data.keys().hasAll(['name', 'jerseyNumber', 'position', 'matchesPlayed', 'goals', 'assists', 'status']) &&
+    function isValidTeam(data) {
+      let requiredFields = ['name', 'shortName'];
+      let allowedFields = ['name', 'shortName', 'logo', 'image', 'color', 'secondaryColor', 'captainId', 'coach', 'status', 'played', 'wins', 'draws', 'losses', 'goalsFor', 'goalsAgainst', 'goalDifference', 'points', 'createdAt', 'updatedAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allowedFields) &&
              data.name is string && data.name.size() <= 100 &&
-             data.jerseyNumber is int &&
-             data.position is string &&
-             data.status in ['active', 'injured', 'suspended'];
+             data.shortName is string && data.shortName.size() <= 10;
     }
 
     function isValidMatch(data) {
-      return data.keys().hasAll(['opponent', 'date', 'status', 'isHome']) &&
-             data.opponent is string && data.opponent.size() <= 100 &&
-             data.status in ['upcoming', 'completed', 'live'];
+      let requiredFields = ['homeTeamId', 'awayTeamId', 'date', 'status'];
+      let allowedFields = ['homeTeamId', 'awayTeamId', 'homeTeamName', 'awayTeamName', 'date', 'time', 'venue', 'competition', 'status', 'homeScore', 'awayScore', 'events', 'createdAt', 'updatedAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allowedFields) &&
+             data.status in ['upcoming', 'live', 'completed', 'postponed', 'cancelled'];
     }
 
     function isValidNews(data) {
-      return data.keys().hasAll(['title', 'date', 'category']) &&
-             data.title is string && data.title.size() <= 200 &&
-             data.category in ['Match Report', 'Announcement', 'Update', 'Training'];
-    }
-
-    function isValidRegistration(data) {
-      return data.keys().hasAll(['userId', 'tournamentName', 'feePaid', 'status']) &&
-             data.userId == request.auth.uid &&
-             data.status in ['pending', 'confirmed', 'failed'];
-    }
-
-    // ---------------------------------------------------------
-    // Global Deny
-    // ---------------------------------------------------------
-    match /{document=**} {
-      allow read, write: if false;
+      let requiredFields = ['title', 'content', 'date'];
+      let allowedFields = ['title', 'content', 'image', 'category', 'date', 'author', 'createdAt', 'updatedAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allowedFields) &&
+             data.title is string && data.title.size() <= 200;
     }
 
     // ---------------------------------------------------------
     // Collection Rules
     // ---------------------------------------------------------
 
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow write: if false; // Managed via console or bootstrap
+    }
+
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
-      allow create: if isEmailVerified() && isOwner(userId) && isValidUser(incoming()) && incoming().role == 'member';
-      allow update: if isEmailVerified() && isOwner(userId) && isValidUser(incoming()) && 
-                    incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt']);
-      allow delete: if isAdmin();
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isSignedIn() && request.auth.uid == userId;
     }
 
     match /players/{playerId} {
-      allow read: if true; // Public read
-      allow write: if isAdmin() && isValidPlayer(incoming());
+      allow read: if true;
+      allow create: if isAdmin() && isValidPlayer(incoming());
+      allow update: if isAdmin() && isValidPlayer(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /teams/{teamId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidTeam(incoming());
+      allow update: if isAdmin() && isValidTeam(incoming());
+      allow delete: if isAdmin();
     }
 
     match /matches/{matchId} {
-      allow read: if true; // Public read
-      allow write: if isAdmin() && isValidMatch(incoming());
+      allow read: if true;
+      allow create: if isAdmin() && isValidMatch(incoming());
+      allow update: if isAdmin() && isValidMatch(incoming());
+      allow delete: if isAdmin();
     }
 
     match /news/{articleId} {
-      allow read: if true; // Public read
-      allow write: if isAdmin() && isValidNews(incoming());
-    }
-
-    match /registrations/{registrationId} {
-      allow get: if isOwner(incoming().userId) || isAdmin();
-      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isEmailVerified() && isValidRegistration(incoming()) && incoming().status == 'pending';
-      allow update: if isAdmin(); // Only admins can confirm registrations
+      allow read: if true;
+      allow create: if isAdmin() && isValidNews(incoming());
+      allow update: if isAdmin() && isValidNews(incoming());
       allow delete: if isAdmin();
     }
-    
-    match /admins/{adminId} {
-      allow read: if isAdmin();
-      allow write: if false; // Only manageable via console
+
+    match /competitions/{compId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /trophies/{trophyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /gallery/{imageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /settings/club {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }

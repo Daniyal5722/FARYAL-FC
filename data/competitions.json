@@ -1,0 +1,22 @@
+[
+  {
+    "id": "comp-1",
+    "name": "Karachi Elite League",
+    "season": "2026/27",
+    "startDate": "2026-01-10",
+    "endDate": "2026-05-30",
+    "type": "league",
+    "active": true,
+    "status": "active"
+  },
+  {
+    "id": "comp-2",
+    "name": "Faryal FC Elite Cup 2026",
+    "season": "2026",
+    "startDate": "2026-06-01",
+    "endDate": "2026-06-28",
+    "type": "cup",
+    "active": false,
+    "status": "upcoming"
+  }
+]

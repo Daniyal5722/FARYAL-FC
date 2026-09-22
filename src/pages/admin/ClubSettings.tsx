@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Loader2, Globe, Mail, Phone, MapPin, History, Target, ShieldCheck } from 'lucide-react';
+import { Save, Loader2, Globe, Mail, Phone, MapPin, History, Target, ShieldCheck, X } from 'lucide-react';
 import { api } from '../../lib/api';
 import { ClubSettings as ClubSettingsType } from '../../types';
 
@@ -8,14 +8,17 @@ export const ClubSettings: React.FC = () => {
   const [settings, setSettings] = useState<ClubSettingsType | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
+      setError(null);
       try {
         const data = await api.settings.get();
         setSettings(data);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching settings:', err);
+        setError(err.message || 'Failed to load settings');
       } finally {
         setLoading(false);
       }
@@ -27,12 +30,12 @@ export const ClubSettings: React.FC = () => {
     e.preventDefault();
     if (!settings) return;
     setSaving(true);
+    setError(null);
     try {
       await api.settings.update(settings);
-      alert('Settings updated successfully!');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving settings:', err);
-      alert('Failed to save settings.');
+      setError(err.message || 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -65,6 +68,19 @@ export const ClubSettings: React.FC = () => {
             Save Changes
           </button>
         </div>
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-500 text-sm font-bold flex items-center justify-between"
+          >
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="p-1 hover:bg-red-500/20 rounded-lg transition-colors">
+              <X size={16} className="text-red-500" />
+            </button>
+          </motion.div>
+        )}
 
         <form onSubmit={handleSave} className="space-y-8">
           {/* General Information */}

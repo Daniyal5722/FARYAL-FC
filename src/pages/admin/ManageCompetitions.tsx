@@ -9,6 +9,7 @@ export const ManageCompetitions: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Competition>>({
     name: '',
     type: 'league',
@@ -20,11 +21,13 @@ export const ManageCompetitions: React.FC = () => {
   });
 
   const fetchData = async () => {
+    setError(null);
     try {
       const data = await api.competitions.getAll();
       setCompetitions(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching competitions:', err);
+      setError(err.message || 'Failed to load competitions');
     } finally {
       setLoading(false);
     }
@@ -36,6 +39,7 @@ export const ManageCompetitions: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     try {
       if (editingId) {
         await api.competitions.update(editingId, formData);
@@ -46,18 +50,21 @@ export const ManageCompetitions: React.FC = () => {
       setEditingId(null);
       setFormData({ name: '', type: 'league', season: '2024/25', status: 'active', active: true, startDate: '', endDate: '' });
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving competition:', err);
+      setError(err.message || 'Failed to save competition');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure? This will remove the competition record.')) return;
+    setError(null);
     try {
       await api.competitions.delete(id);
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting competition:', err);
+      setError(err.message || 'Failed to delete competition');
     }
   };
 
@@ -86,6 +93,19 @@ export const ManageCompetitions: React.FC = () => {
             <Plus size={16} /> Add Competition
           </button>
         </div>
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-500 text-sm font-bold flex items-center justify-between"
+          >
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="p-1 hover:bg-red-500/20 rounded-lg transition-colors">
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
 
         {/* Modal/Form */}
         {(isAdding || editingId) && (

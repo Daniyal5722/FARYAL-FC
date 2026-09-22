@@ -15,6 +15,7 @@ export const ManageMatches: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<Partial<Match>>({
     homeTeamId: '',
@@ -63,6 +64,7 @@ export const ManageMatches: React.FC = () => {
   }, []);
 
   const fetchData = async () => {
+    setError(null);
     try {
       const [matchesData, teamsData, playersData] = await Promise.all([
         api.matches.getAll(),
@@ -72,8 +74,9 @@ export const ManageMatches: React.FC = () => {
       setMatches(matchesData);
       setTeams(teamsData);
       setPlayers(playersData);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching data:', err);
+      setError(err.message || 'Failed to load match data');
     } finally {
       setLoading(false);
     }
@@ -105,6 +108,7 @@ export const ManageMatches: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     try {
       const homeTeam = teams.find(t => t.id === formData.homeTeamId);
       const awayTeam = teams.find(t => t.id === formData.awayTeamId);
@@ -122,8 +126,9 @@ export const ManageMatches: React.FC = () => {
       }
       setIsModalOpen(false);
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving match:', err);
+      setError(err.message || 'Failed to save match');
     }
   };
 
@@ -147,11 +152,13 @@ export const ManageMatches: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this fixture?')) {
+      setError(null);
       try {
         await api.matches.delete(id);
         fetchData();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error deleting match:', err);
+        setError(err.message || 'Failed to delete match');
       }
     }
   };
@@ -175,6 +182,22 @@ export const ManageMatches: React.FC = () => {
             <Plus size={20} /> Create Fixture
           </button>
         </div>
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-500 text-sm font-bold flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <AlertCircle size={18} />
+              <span>{error}</span>
+            </div>
+            <button onClick={() => setError(null)} className="p-1 hover:bg-red-500/20 rounded-lg transition-colors">
+              <X size={16} />
+            </button>
+          </motion.div>
+        )}
 
         {/* Matches List */}
         <div className="grid grid-cols-1 gap-4">
