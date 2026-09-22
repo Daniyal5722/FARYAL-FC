@@ -185,6 +185,13 @@ async function startServer() {
         primaryColor: '#3b82f6',
         secondaryColor: '#1e293b',
         stadium: 'Faryal Ground',
+        ground: {
+          name: 'Faryal FC Ground',
+          address: '20-A Main Rd, Model Colony Block 24 Model Colony, Karachi, 75080, Pakistan',
+          latitude: 24.903822,
+          longitude: 67.194202,
+          mapsUrl: 'https://share.google/WntzBRDQxKW4EUPPI'
+        },
         history: '',
         vision: '',
         mission: '',
