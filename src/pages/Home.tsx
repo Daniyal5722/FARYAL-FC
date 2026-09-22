@@ -7,10 +7,12 @@ import { Player, Match, Team, News, Trophy as TrophyType, ClubSettings } from '.
 import { Link } from 'react-router-dom';
 import { 
   ArrowRight, Trophy, Star, Users, Zap, Loader2, 
-  Calendar, MapPin, Award, Instagram, Facebook, Twitter, Mail, Phone
+  Calendar, MapPin, Award, Instagram, Facebook, Twitter, Mail, Phone,
+  TrendingUp, Activity, Target
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useClubSettings } from '../hooks/useClubSettings';
+import { cn, formatDate } from '../lib/utils';
 
 export const Home: React.FC = () => {
   const { settings } = useClubSettings();
@@ -52,313 +54,386 @@ export const Home: React.FC = () => {
   }
 
   const completedMatches = matches.filter(m => m.status === 'completed').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const upcomingMatches = matches.filter(m => m.status === 'upcoming').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const upcomingMatches = matches.filter(m => m.status === 'upcoming' || m.status === 'live').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   
   const latestMatch = completedMatches[0];
   const nextMatch = upcomingMatches[0];
   const recentResults = completedMatches.slice(1, 4);
   const topScorers = [...players].sort((a, b) => (b.stats?.goals || 0) - (a.stats?.goals || 0)).slice(0, 5);
-  const clubPosition = standings.findIndex(t => t.id === 'team-1') + 1 || '-';
+  const topAssists = [...players].sort((a, b) => (b.stats?.assists || 0) - (a.stats?.assists || 0)).slice(0, 5);
 
   return (
-    <div className="bg-slate-950">
+    <div className="bg-slate-950 overflow-hidden">
       <Hero />
 
-      {/* Club Introduction */}
-      <section className="py-24 px-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
-            <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-xs mb-4 block">About {settings.name}</span>
-            <h2 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-none mb-8">
-              OUR <span className="text-slate-800">HISTORY</span>
-            </h2>
-            <p className="text-slate-400 text-lg font-medium leading-relaxed mb-8">
-              {settings.history || "Founded with a vision to revolutionize local football, Faryal FC stands as a beacon of excellence and community spirit. Our journey is defined by passion, resilience, and an unwavering commitment to the beautiful game."}
-            </p>
-            <div className="grid grid-cols-2 gap-8">
-              <div>
-                <h4 className="text-white font-black uppercase italic tracking-tighter mb-2">Our Vision</h4>
-                <p className="text-slate-500 text-sm leading-relaxed">{settings.vision || "To be the most respected and successful football club in the region."}</p>
+      {/* Next Match Ticker/Banner */}
+      {nextMatch && (
+        <div className="bg-blue-600 py-3 overflow-hidden relative group cursor-default">
+          <div className="flex whitespace-nowrap animate-marquee">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="flex items-center gap-12 px-6">
+                <span className="text-white font-black uppercase italic tracking-tighter text-sm">
+                  NEXT MATCH: {nextMatch.homeTeamName} VS {nextMatch.awayTeamName} — {formatDate(nextMatch.date)} @ {nextMatch.time} — {nextMatch.competition}
+                </span>
+                <TrendingUp size={16} className="text-blue-200" />
               </div>
-              <div>
-                <h4 className="text-white font-black uppercase italic tracking-tighter mb-2">Our Mission</h4>
-                <p className="text-slate-500 text-sm leading-relaxed">{settings.mission || "Developing elite talent and fostering a winning culture for all ages."}</p>
-              </div>
-            </div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="relative"
-          >
-            <div className="aspect-video rounded-3xl overflow-hidden border border-slate-800 shadow-2xl relative group">
-                <img 
-                    src="https://images.unsplash.com/photo-1575361204480-aadea2d4d449?q=80&w=1000&auto=format&fit=crop" 
-                    alt="Club Atmosphere" 
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent" />
-                <div className="absolute bottom-8 left-8">
-                    <p className="text-white font-black italic text-2xl uppercase tracking-tighter">Established {settings.founded}</p>
-                </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Match Center Preview */}
-      <section className="py-24 px-6 bg-slate-900/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            {/* Latest Result */}
-            <div className="lg:col-span-2">
-              <div className="flex items-end justify-between mb-8">
-                <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter">Latest Result</h3>
-                <Link to="/matches" className="text-blue-500 text-[10px] font-black uppercase tracking-widest hover:underline">View All</Link>
-              </div>
-              {latestMatch ? (
-                <MatchCard match={latestMatch} />
-              ) : (
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center">
-                    <p className="text-slate-500 font-bold uppercase tracking-widest">No recent results</p>
-                </div>
-              )}
-              
-              <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                {recentResults.map(match => (
-                    <div key={match.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
-                        <span className="text-[10px] font-black text-slate-500 uppercase">{new Date(match.date).toLocaleDateString()}</span>
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-white uppercase italic tracking-tighter">{match.homeScore} - {match.awayScore}</span>
-                        </div>
-                    </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Upcoming Match */}
-            <div>
-              <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-8">Next Match</h3>
-              {nextMatch ? (
-                <div className="bg-blue-600 rounded-3xl p-8 relative overflow-hidden">
-                    <div className="relative z-10">
-                        <p className="text-[10px] font-black text-blue-100 uppercase tracking-[0.2em] mb-6">{nextMatch.competition}</p>
-                        <div className="flex flex-col items-center gap-6 mb-8">
-                            <div className="text-center">
-                                <p className="text-3xl font-black text-white uppercase italic tracking-tighter mb-1">{nextMatch.homeTeamName}</p>
-                                <span className="text-blue-200 text-xs font-bold uppercase tracking-widest">Home</span>
-                            </div>
-                            <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center font-black italic text-white text-xl">VS</div>
-                            <div className="text-center">
-                                <p className="text-3xl font-black text-white uppercase italic tracking-tighter mb-1">{nextMatch.awayTeamName}</p>
-                                <span className="text-blue-200 text-xs font-bold uppercase tracking-widest">Away</span>
-                            </div>
-                        </div>
-                        <div className="border-t border-white/10 pt-6 flex flex-col gap-3">
-                            <div className="flex items-center gap-3 text-white">
-                                <Calendar size={14} className="text-blue-200" />
-                                <span className="text-xs font-bold">{new Date(nextMatch.date).toLocaleDateString()} @ {nextMatch.time}</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-white">
-                                <MapPin size={14} className="text-blue-200" />
-                                <span className="text-xs font-bold">{nextMatch.venue}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-              ) : (
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center h-full flex flex-col justify-center">
-                    <p className="text-slate-500 font-bold uppercase tracking-widest">No upcoming matches</p>
-                </div>
-              )}
-            </div>
+            ))}
           </div>
         </div>
-      </section>
+      )}
 
-      {/* Standings & Top Scorers */}
-      <section className="py-24 px-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
-            {/* Standings Preview */}
-            <div className="lg:col-span-2">
-                <div className="flex items-end justify-between mb-8">
-                    <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase leading-none">
-                        LEAGUE <span className="text-slate-800">TABLE</span>
-                    </h2>
-                    <Link to="/standings" className="text-blue-500 text-[10px] font-black uppercase tracking-widest hover:underline">Full Standings</Link>
-                </div>
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden">
-                    <table className="w-full text-left">
-                        <thead className="bg-slate-800/50">
-                            <tr>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Pos</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Team</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">P</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">GD</th>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Pts</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800">
-                            {standings.slice(0, 6).map((team, i) => (
-                                <tr key={team.id} className={cn("hover:bg-slate-800/30 transition-colors", team.id === 'team-1' && "bg-blue-600/5")}>
-                                    <td className="px-6 py-4 text-sm font-black text-white italic">{i + 1}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            {team.logo && <img src={team.logo} className="w-6 h-6 object-contain" alt="" />}
-                                            <span className="text-sm font-bold text-white uppercase tracking-tighter">{team.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm font-bold text-slate-400 text-center">{team.played}</td>
-                                    <td className="px-6 py-4 text-sm font-bold text-slate-400 text-center">{team.goalDifference}</td>
-                                    <td className="px-6 py-4 text-sm font-black text-blue-500 text-center">{team.points}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Top Scorers */}
-            <div>
-                <h2 className="text-4xl font-black text-white italic tracking-tighter uppercase leading-none mb-8">
-                    TOP <span className="text-slate-800">SCORERS</span>
-                </h2>
-                <div className="space-y-4">
-                    {topScorers.map((player, i) => (
-                        <div key={player.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex items-center justify-between group hover:border-blue-500 transition-all">
-                            <div className="flex items-center gap-4">
-                                <span className="text-2xl font-black text-slate-800 italic group-hover:text-blue-500 transition-colors">#{i+1}</span>
-                                <div>
-                                    <p className="text-sm font-black text-white uppercase italic tracking-tighter">{player.name}</p>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{player.position}</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-2xl font-black text-white italic tracking-tighter">{player.stats?.goals || 0}</p>
-                                <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Goals</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-      </section>
-
-      {/* Featured Players */}
-      <section className="py-24 px-6 bg-slate-900/50">
+      {/* Match Center Section */}
+      <section className="py-32 px-6 relative">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/5 blur-[120px] rounded-full -mr-64 -mt-64" />
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-end justify-between gap-8 mb-16">
             <div>
-              <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-xs mb-4 block">First Team Squad</span>
-              <h2 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
-                SQUAD <span className="text-slate-800">PREVIEW</span>
+              <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">Match Day</span>
+              <h2 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">
+                MATCH <span className="text-slate-800">CENTER</span>
               </h2>
             </div>
-            <Link to="/team" className="flex items-center gap-2 text-slate-400 hover:text-blue-500 font-bold uppercase tracking-widest text-sm transition-colors group">
-              View Full Squad <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            <Link to="/matches" className="button-premium-outline">
+              VIEW ALL FIXTURES
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {players.slice(0, 4).map(player => (
-              <PlayerCard key={player.id} player={player} />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            {/* Main Result Card */}
+            <div className="lg:col-span-8">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 text-emerald-500">
+                  <Activity size={20} />
+                </div>
+                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Latest Result</h3>
+              </div>
+              {latestMatch ? (
+                <MatchCard match={latestMatch} homeTeam={standings.find(t => t.id === latestMatch.homeTeamId)} awayTeam={standings.find(t => t.id === latestMatch.awayTeamId)} />
+              ) : (
+                <div className="bg-slate-900/50 border border-slate-800 rounded-[2.5rem] p-24 text-center">
+                    <p className="text-slate-500 font-black uppercase tracking-widest italic">No match data available</p>
+                </div>
+              )}
+            </div>
+
+            {/* Side Match Column */}
+            <div className="lg:col-span-4 space-y-8">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center border border-blue-600/20 text-blue-500">
+                  <Calendar size={20} />
+                </div>
+                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Next Up</h3>
+              </div>
+              {nextMatch ? (
+                <div className="bg-blue-600 rounded-[2.5rem] p-10 relative overflow-hidden group shadow-2xl shadow-blue-600/20">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-700" />
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-black text-blue-100 uppercase tracking-[0.4em] mb-8">{nextMatch.competition}</p>
+                        <div className="space-y-8 mb-10">
+                            <div className="flex items-center justify-between">
+                                <span className="text-2xl font-black text-white uppercase italic tracking-tighter">{nextMatch.homeTeamName}</span>
+                                <div className="w-10 h-10 bg-white/20 rounded-xl backdrop-blur-md flex items-center justify-center">
+                                    <span className="text-xs font-black text-white italic">H</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="h-[1px] flex-1 bg-white/20" />
+                                <span className="text-sm font-black text-white italic">VS</span>
+                                <div className="h-[1px] flex-1 bg-white/20" />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="w-10 h-10 bg-white/20 rounded-xl backdrop-blur-md flex items-center justify-center">
+                                    <span className="text-xs font-black text-white italic">A</span>
+                                </div>
+                                <span className="text-2xl font-black text-white uppercase italic tracking-tighter">{nextMatch.awayTeamName}</span>
+                            </div>
+                        </div>
+                        <div className="pt-8 border-t border-white/20 space-y-4">
+                            <div className="flex items-center gap-4 text-white">
+                                <Calendar size={16} className="text-blue-200" />
+                                <span className="text-xs font-black uppercase tracking-widest">{formatDate(nextMatch.date)}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-white">
+                                <Clock size={16} className="text-blue-200" />
+                                <span className="text-xs font-black uppercase tracking-widest">{nextMatch.time}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-white">
+                                <MapPin size={16} className="text-blue-200" />
+                                <span className="text-xs font-black uppercase tracking-widest">{nextMatch.venue}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              ) : (
+                <div className="bg-slate-900/50 border border-slate-800 rounded-[2.5rem] p-12 text-center h-full flex flex-col justify-center">
+                    <p className="text-slate-500 font-black uppercase tracking-widest italic">No upcoming fixtures</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Standings & Stats Section */}
+      <section className="py-32 px-6 bg-slate-950">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+            {/* Standings */}
+            <div className="lg:col-span-7">
+                <div className="flex items-end justify-between mb-12">
+                  <div>
+                    <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">League Position</span>
+                    <h2 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
+                      THE <span className="text-slate-800">TABLE</span>
+                    </h2>
+                  </div>
+                  <Link to="/standings" className="text-blue-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">FULL STANDINGS</Link>
+                </div>
+                <div className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden shadow-2xl">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead className="bg-slate-800/50">
+                        <tr>
+                          <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Pos</th>
+                          <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Club</th>
+                          <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">P</th>
+                          <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">GD</th>
+                          <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Pts</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800">
+                        {standings.slice(0, 8).map((team, i) => (
+                          <tr key={team.id} className={cn(
+                            "hover:bg-slate-800/30 transition-colors group",
+                            team.id === 'team-1' ? "bg-blue-600/5" : ""
+                          )}>
+                            <td className="px-8 py-5">
+                              <span className={cn(
+                                "text-lg font-black italic tracking-tighter",
+                                i < 3 ? "text-blue-500" : "text-slate-500"
+                              )}>{i + 1}</span>
+                            </td>
+                            <td className="px-8 py-5">
+                              <div className="flex items-center gap-4">
+                                <div className="w-8 h-8 bg-slate-950 rounded-lg p-1.5 border border-slate-800 group-hover:scale-110 transition-transform">
+                                  <img src={team.logo} alt="" className="w-full h-full object-contain" />
+                                </div>
+                                <span className="text-sm font-black text-white uppercase italic tracking-tighter leading-none">{team.name}</span>
+                              </div>
+                            </td>
+                            <td className="px-8 py-5 text-sm font-bold text-slate-400 text-center">{team.played}</td>
+                            <td className="px-8 py-5 text-sm font-bold text-slate-400 text-center">{team.goalDifference > 0 ? `+${team.goalDifference}` : team.goalDifference}</td>
+                            <td className="px-8 py-5 text-center">
+                                <span className="text-lg font-black text-white italic tracking-tighter">{team.points}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+            </div>
+
+            {/* Top Performers */}
+            <div className="lg:col-span-5">
+                <div className="mb-12">
+                    <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">Individual Brilliance</span>
+                    <h2 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
+                      TOP <span className="text-slate-800">PERFORMERS</span>
+                    </h2>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-8">
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20 text-orange-500">
+                                <Target size={20} />
+                            </div>
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Leading Scorers</h3>
+                        </div>
+                        <div className="space-y-4">
+                            {topScorers.map((player, i) => (
+                                <div key={player.id} className="flex items-center justify-between group">
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-xl font-black text-slate-800 italic group-hover:text-blue-500 transition-colors">0{i+1}</span>
+                                        <div>
+                                            <p className="text-sm font-black text-white uppercase italic tracking-tighter leading-tight">{player.name}</p>
+                                            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{player.position}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-2xl font-black text-white italic tracking-tighter">{player.stats?.goals || 0}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-8">
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20 text-purple-500">
+                                <Star size={20} />
+                            </div>
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Playmakers</h3>
+                        </div>
+                        <div className="space-y-4">
+                            {topAssists.map((player, i) => (
+                                <div key={player.id} className="flex items-center justify-between group">
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-xl font-black text-slate-800 italic group-hover:text-blue-500 transition-colors">0{i+1}</span>
+                                        <div>
+                                            <p className="text-sm font-black text-white uppercase italic tracking-tighter leading-tight">{player.name}</p>
+                                            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{player.position}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-2xl font-black text-white italic tracking-tighter">{player.stats?.assists || 0}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured News Grid */}
+      <section className="py-32 px-6 relative overflow-hidden">
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-600/5 blur-[150px] rounded-full -ml-80 -mb-80" />
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="flex flex-col md:flex-row items-end justify-between gap-8 mb-20">
+            <div>
+              <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-[10px] mb-4 block">Inside Faryal FC</span>
+              <h2 className="text-5xl md:text-8xl font-black text-white italic tracking-tighter uppercase leading-none">
+                LATEST <span className="text-slate-800">NEWS</span>
+              </h2>
+            </div>
+            <Link to="/news" className="button-premium">
+              BROWSE ALL NEWS
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {news.slice(0, 3).map((article, i) => (
+              <motion.div
+                key={article.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                viewport={{ once: true }}
+                className="group bg-slate-900 border border-slate-800 rounded-[2.5rem] overflow-hidden hover:border-blue-500 transition-all duration-500"
+              >
+                <div className="aspect-[4/3] relative overflow-hidden">
+                  <img src={article.image} alt={article.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
+                  <div className="absolute top-6 left-6">
+                    <span className="bg-blue-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-xl shadow-blue-600/30">
+                      {article.category}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-10">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4">{formatDate(article.date)}</span>
+                  <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-4 line-clamp-2 leading-none group-hover:text-blue-500 transition-colors">
+                    {article.title}
+                  </h3>
+                  <p className="text-slate-400 text-sm font-medium leading-relaxed mb-8 line-clamp-3">
+                    {article.content}
+                  </p>
+                  <Link to={`/news/${article.id}`} className="flex items-center gap-3 text-white font-black text-[10px] uppercase tracking-[0.3em] group/btn">
+                    READ ARTICLE <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                  </Link>
+                </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Latest News */}
-      <section className="py-24 px-6">
-        <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-5xl md:text-7xl font-black text-white italic tracking-tighter uppercase leading-none">
-                LATEST <span className="text-slate-800">NEWS</span>
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {news.length > 0 ? news.slice(0, 3).map((article, i) => (
-                    <motion.div
-                        key={article.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        viewport={{ once: true }}
-                        className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden group hover:border-blue-500 transition-all"
-                    >
-                        <div className="aspect-video relative">
-                            <img src={article.image} alt={article.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                            <div className="absolute top-4 left-4 bg-blue-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">{article.category}</div>
-                        </div>
-                        <div className="p-8">
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">{new Date(article.date).toLocaleDateString()}</p>
-                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-4 line-clamp-2 leading-tight group-hover:text-blue-500 transition-colors">{article.title}</h3>
-                            <p className="text-slate-400 text-sm line-clamp-3 mb-6 font-medium leading-relaxed">{article.content}</p>
-                            <Link to={`/news/${article.id}`} className="inline-flex items-center gap-2 text-white font-black text-[10px] uppercase tracking-[0.2em] group/link">
-                                Read Full Article <ArrowRight size={12} className="group-hover/link:translate-x-1 transition-transform" />
-                            </Link>
-                        </div>
-                    </motion.div>
-                )) : (
-                    <div className="col-span-full py-24 text-center">
-                        <p className="text-slate-500 font-bold uppercase tracking-widest">No news available at the moment.</p>
-                    </div>
-                )}
-            </div>
+      {/* Official Partners / Sponsors (Placeholder) */}
+      <section className="py-24 px-6 border-y border-slate-900 bg-slate-950/50">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-center gap-20 opacity-30 grayscale contrast-125">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="text-3xl font-black italic tracking-tighter text-white uppercase">SPONSOR</div>
+          ))}
         </div>
       </section>
 
-      {/* Quick Links & Info */}
-      <section className="py-24 px-6 bg-slate-900 border-t border-slate-800">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-              <div>
-                  <h4 className="text-white font-black uppercase italic tracking-tighter mb-6 text-xl">Contact Us</h4>
-                  <div className="space-y-4">
-                      <div className="flex items-center gap-3 text-slate-400">
-                          <Mail size={16} className="text-blue-500" />
-                          <span className="text-sm font-medium">{settings.contact.email}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-slate-400">
-                          <Phone size={16} className="text-blue-500" />
-                          <span className="text-sm font-medium">{settings.contact.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-slate-400">
-                          <MapPin size={16} className="text-blue-500" />
-                          <span className="text-sm font-medium">{settings.contact.address}</span>
-                      </div>
-                  </div>
+      {/* Footer Info */}
+      <section className="py-32 px-6 bg-slate-900 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
+            <div className="lg:col-span-2">
+              <Link to="/" className="flex items-center gap-3 mb-8 group">
+                <img src={settings.logo} alt={settings.name} className="w-16 h-16 object-contain" />
+                <span className="text-4xl font-black tracking-tighter text-white uppercase italic leading-none">
+                  FARYAL <span className="text-slate-700">FC</span>
+                </span>
+              </Link>
+              <p className="text-slate-400 font-medium leading-relaxed mb-10 max-w-md">
+                {settings.history}
+              </p>
+              <div className="flex gap-4">
+                {[Instagram, Facebook, Twitter].map((Icon, i) => (
+                  <a key={i} href="#" className="w-12 h-12 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-500 hover:text-white hover:border-blue-500 transition-all">
+                    <Icon size={20} />
+                  </a>
+                ))}
               </div>
-              <div>
-                  <h4 className="text-white font-black uppercase italic tracking-tighter mb-6 text-xl">Quick Links</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                      {['Team', 'Matches', 'Standings', 'Gallery', 'About', 'Contact'].map(link => (
-                          <Link key={link} to={`/${link.toLowerCase()}`} className="text-slate-400 text-sm font-medium hover:text-blue-500 transition-colors">{link}</Link>
-                      ))}
-                  </div>
-              </div>
-              <div className="lg:col-span-2">
-                  <h4 className="text-white font-black uppercase italic tracking-tighter mb-6 text-xl">Our Socials</h4>
-                  <div className="flex flex-wrap gap-4">
-                      {[
-                          { icon: Instagram, label: 'Instagram', color: 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500' },
-                          { icon: Facebook, label: 'Facebook', color: 'bg-[#1877F2]' },
-                          { icon: Twitter, label: 'Twitter', color: 'bg-[#1DA1F2]' }
-                      ].map(social => (
-                          <a key={social.label} href="#" className={cn("flex items-center gap-3 px-6 py-3 rounded-xl text-white font-black text-[10px] uppercase tracking-widest transition-all hover:scale-105", social.color)}>
-                              <social.icon size={16} /> {social.label}
-                          </a>
-                      ))}
-                  </div>
-              </div>
-          </div>
-      </section>
+            </div>
 
+            <div>
+              <h4 className="text-white font-black uppercase italic tracking-tighter mb-8 text-xl">Information</h4>
+              <nav className="flex flex-col gap-4">
+                {['About Us', 'Matches', 'Squad', 'Standings', 'Gallery', 'Contact'].map(item => (
+                  <Link key={item} to={`/${item.toLowerCase().replace(' ', '')}`} className="text-slate-500 font-bold uppercase tracking-widest text-xs hover:text-blue-500 transition-colors">
+                    {item}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
+            <div>
+              <h4 className="text-white font-black uppercase italic tracking-tighter mb-8 text-xl">Find Us</h4>
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <MapPin className="text-blue-500 shrink-0" size={18} />
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Official Ground</p>
+                    <p className="text-sm font-bold text-white uppercase italic tracking-tighter leading-tight">{settings.ground.address}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <Mail className="text-blue-500 shrink-0" size={18} />
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Email Support</p>
+                    <p className="text-sm font-bold text-white uppercase italic tracking-tighter leading-tight">{settings.contact.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <Phone className="text-blue-500 shrink-0" size={18} />
+                  <div>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Hotline</p>
+                    <p className="text-sm font-bold text-white uppercase italic tracking-tighter leading-tight">{settings.contact.phone}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-32 pt-10 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
+            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
+              © {new Date().getFullYear()} FARYAL FOOTBALL CLUB — ALL RIGHTS RESERVED
+            </p>
+            <div className="flex gap-8">
+              <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] cursor-pointer hover:text-white transition-colors">PRIVACY POLICY</span>
+              <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] cursor-pointer hover:text-white transition-colors">TERMS OF SERVICE</span>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
-
-const cn = (...classes: (string | boolean | undefined)[]) => classes.filter(Boolean).join(' ');
