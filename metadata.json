@@ -1,0 +1,6 @@
+{
+  "name": "Faryal FC",
+  "description": "Faryal FC | Official Football Club Website. Explore our squad, fixtures, results, formations and Faryal Ground.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

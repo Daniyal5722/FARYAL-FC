@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #002d62;
+  --color-brand-secondary: #001a3d;
+  --color-brand-accent: #3b82f6;
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  --font-body: "Inter", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-200 antialiased font-body;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight text-white;
+  }
+}
+
+@layer utilities {
+  .football-pitch {
+    background: radial-gradient(circle at center, #166534 0%, #14532d 100%);
+    background-image: 
+      linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+  
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl transition-all duration-300;
+  }
+  
+  .glass-card-hover {
+    @apply hover:bg-white/10 hover:border-white/20 hover:shadow-2xl hover:-translate-y-1;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+  
+  .button-premium {
+    @apply relative overflow-hidden bg-blue-600 text-white font-black uppercase tracking-widest px-8 py-4 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg shadow-blue-600/20;
+  }
+  
+  .section-padding {
+    @apply py-24 px-6 md:px-12 lg:px-24;
+  }
+}

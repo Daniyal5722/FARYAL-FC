@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile data including roles and basic info.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "member"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Player": {
+      "title": "Player",
+      "description": "Club player profile and statistics.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "jerseyNumber": { "type": "integer" },
+        "position": { "type": "string" },
+        "role": { "type": "string" },
+        "age": { "type": "integer" },
+        "nationality": { "type": "string" },
+        "matchesPlayed": { "type": "integer" },
+        "goals": { "type": "integer" },
+        "assists": { "type": "integer" },
+        "cleanSheets": { "type": "integer" },
+        "status": { "type": "string", "enum": ["active", "injured", "suspended"] },
+        "image": { "type": "string" },
+        "bio": { "type": "string" },
+        "strengths": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name", "jerseyNumber", "position", "matchesPlayed", "goals", "assists", "status"]
+    },
+    "Match": {
+      "title": "Match",
+      "description": "Fixture or completed match result.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "opponent": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "venue": { "type": "string" },
+        "competition": { "type": "string" },
+        "status": { "type": "string", "enum": ["upcoming", "completed", "live"] },
+        "homeScore": { "type": "integer" },
+        "awayScore": { "type": "integer" },
+        "isHome": { "type": "boolean" },
+        "goalScorers": { "type": "array", "items": { "type": "object" } }
+      },
+      "required": ["opponent", "date", "status", "isHome"]
+    },
+    "NewsArticle": {
+      "title": "News Article",
+      "description": "Club news and updates.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "image": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string", "enum": ["Match Report", "Announcement", "Update", "Training"] }
+      },
+      "required": ["title", "date", "category"]
+    },
+    "Registration": {
+      "title": "Tournament Registration",
+      "description": "Registration details for tournament entry.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "registrationId": { "type": "string" },
+        "tournamentName": { "type": "string" },
+        "feePaid": { "type": "number" },
+        "currency": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "failed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "tournamentName", "feePaid", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/players/{playerId}": {
+      "schema": "Player",
+      "description": "Club players."
+    },
+    "/matches/{matchId}": {
+      "schema": "Match",
+      "description": "Matches and fixtures."
+    },
+    "/news/{articleId}": {
+      "schema": "NewsArticle",
+      "description": "News articles."
+    },
+    "/registrations/{registrationId}": {
+      "schema": "Registration",
+      "description": "Tournament registrations."
+    }
+  }
+}

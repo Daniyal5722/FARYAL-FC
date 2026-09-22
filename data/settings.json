@@ -1,0 +1,29 @@
+{
+  "name": "Faryal FC",
+  "shortName": "FFC",
+  "founded": "2024",
+  "logo": "/logo.png",
+  "primaryColor": "#002d62",
+  "secondaryColor": "#ffffff",
+  "stadium": "Faryal Ground",
+  "ground": {
+    "name": "Faryal FC Ground",
+    "address": "20-A Main Rd, Model Colony Block 24 Model Colony, Karachi, 75080, Pakistan",
+    "latitude": 24.903822,
+    "longitude": 67.194202,
+    "mapsUrl": "https://share.google/WntzBRDQxKW4EUPPI"
+  },
+  "history": "Faryal FC was established in 2024 with a vision to build a world-class footballing community. Starting from local roots in Karachi, the club has quickly grown into a competitive force, emphasizing youth development, tactical excellence, and a spirit that never says die.",
+  "vision": "To become the premier destination for footballing talent in the region.",
+  "mission": "To develop technically gifted players who play with passion and integrity.",
+  "socials": {
+    "instagram": "https://instagram.com/faryalfc",
+    "facebook": "https://facebook.com/faryalfc",
+    "whatsapp": "https://wa.me/923000000000"
+  },
+  "contact": {
+    "email": "info@faryalfc.com",
+    "phone": "+92 300 000 0000",
+    "address": "20-A Main Rd, Model Colony, Karachi, Pakistan"
+  }
+}
