@@ -9,16 +9,29 @@ import { useFirebase } from '../contexts/FirebaseContext';
 export const Login: React.FC = () => {
   const [isRegister, setIsRegister] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
   const navigate = useNavigate();
   const { user } = useFirebase();
 
   const handleGoogleLogin = async () => {
+    if (isSigningIn) return;
+    setIsSigningIn(true);
+    setError(null);
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      navigate('/');
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const res = await signInWithPopup(auth, provider);
+      if (res.user?.email === 'mdaniyalhayyat@gmail.com') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
-      setError(err.message);
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        setError(err.message || 'Failed to sign in with Google');
+      }
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
@@ -31,6 +44,7 @@ export const Login: React.FC = () => {
   };
 
   if (user) {
+    const isAdmin = user.email === 'mdaniyalhayyat@gmail.com';
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6 pt-20">
         <div className="w-full max-w-md text-center">
@@ -41,15 +55,29 @@ export const Login: React.FC = () => {
             WELCOME, {user.displayName?.split(' ')[0]}
           </h1>
           <p className="text-slate-500 font-bold uppercase tracking-widest text-xs mb-8">
-            YOU ARE CURRENTLY LOGGED IN
+            {isAdmin ? 'ADMINISTRATOR AUTHENTICATED' : 'YOU ARE CURRENTLY LOGGED IN'}
           </p>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-8 py-5 rounded-xl font-black text-lg transition-all"
-          >
-            <LogOut className="w-5 h-5" />
-            LOGOUT FROM PORTAL
-          </button>
+
+          <div className="space-y-4">
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-5 rounded-xl font-black text-lg transition-all shadow-xl shadow-blue-600/30"
+              >
+                <Shield className="w-5 h-5" />
+                ENTER ADMIN PANEL
+              </Link>
+            )}
+
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-8 py-4 rounded-xl font-black text-sm transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              LOGOUT FROM PORTAL
+            </button>
+          </div>
+
           <Link to="/" className="inline-block mt-8 text-blue-500 font-bold uppercase tracking-widest text-xs hover:underline">
             RETURN TO HOME
           </Link>
@@ -99,10 +127,11 @@ export const Login: React.FC = () => {
 
             <button
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-100 text-slate-950 px-8 py-5 rounded-xl font-black text-sm transition-all shadow-xl shadow-white/5"
+              disabled={isSigningIn}
+              className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-100 disabled:opacity-50 text-slate-950 px-8 py-5 rounded-xl font-black text-sm transition-all shadow-xl shadow-white/5"
             >
               <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
-              CONTINUE WITH GOOGLE
+              {isSigningIn ? 'CONNECTING...' : 'CONTINUE WITH GOOGLE'}
             </button>
 
             <p className="text-[10px] text-slate-500 text-center font-bold uppercase tracking-widest leading-relaxed">

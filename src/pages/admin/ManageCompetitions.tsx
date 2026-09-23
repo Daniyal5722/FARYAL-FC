@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Trophy, Trash2, Edit2, Loader2, Calendar, Layout, Save, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Trophy, Trash2, Edit2, Calendar, Layout, Save, X, Shield } from 'lucide-react';
 import { api } from '../../lib/api';
 import { Competition } from '../../types';
+import { useToast } from '../../contexts/ToastContext';
+import { ConfirmModal } from '../../components/admin/ConfirmModal';
 
 export const ManageCompetitions: React.FC = () => {
+  const { success, error: toastError } = useToast();
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingComp, setEditingComp] = useState<Competition | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Competition | null>(null);
+  const [saving, setSaving] = useState(false);
+
   const [formData, setFormData] = useState<Partial<Competition>>({
     name: '',
     type: 'league',
@@ -17,17 +22,16 @@ export const ManageCompetitions: React.FC = () => {
     status: 'active',
     active: true,
     startDate: '',
-    endDate: ''
+    endDate: '',
   });
 
   const fetchData = async () => {
-    setError(null);
+    setLoading(true);
     try {
       const data = await api.competitions.getAll();
       setCompetitions(data);
     } catch (err: any) {
-      console.error('Error fetching competitions:', err);
-      setError(err.message || 'Failed to load competitions');
+      toastError(err.message || 'Failed to load competitions');
     } finally {
       setLoading(false);
     }
@@ -37,205 +41,281 @@ export const ManageCompetitions: React.FC = () => {
     fetchData();
   }, []);
 
+  const handleOpenModal = (comp?: Competition) => {
+    if (comp) {
+      setEditingComp(comp);
+      setFormData(comp);
+    } else {
+      setEditingComp(null);
+      setFormData({
+        name: '',
+        type: 'league',
+        season: '2024/25',
+        status: 'active',
+        active: true,
+        startDate: '',
+        endDate: '',
+      });
+    }
+    setIsAdding(true);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    if (!formData.name?.trim()) return;
+
+    setSaving(true);
     try {
-      if (editingId) {
-        await api.competitions.update(editingId, formData);
+      if (editingComp) {
+        await api.competitions.update(editingComp.id, formData);
+        success('Competition updated successfully!');
       } else {
         await api.competitions.create(formData);
+        success('New competition tournament created!');
       }
       setIsAdding(false);
-      setEditingId(null);
-      setFormData({ name: '', type: 'league', season: '2024/25', status: 'active', active: true, startDate: '', endDate: '' });
+      setEditingComp(null);
       fetchData();
     } catch (err: any) {
-      console.error('Error saving competition:', err);
-      setError(err.message || 'Failed to save competition');
+      toastError(err.message || 'Failed to save competition');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure? This will remove the competition record.')) return;
-    setError(null);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.competitions.delete(id);
+      await api.competitions.delete(deleteTarget.id);
+      success('Competition removed');
+      setDeleteTarget(null);
       fetchData();
     } catch (err: any) {
-      console.error('Error deleting competition:', err);
-      setError(err.message || 'Failed to delete competition');
+      toastError(err.message || 'Failed to delete competition');
     }
   };
-
-  if (loading) {
-    return (
-      <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen flex items-center justify-center">
-        <Loader2 className="text-blue-500 animate-spin" size={48} />
-      </div>
-    );
-  }
 
   return (
-    <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          <div>
-            <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-xs mb-4 block">Tournament Control</span>
-            <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
-              MANAGE <span className="text-slate-800">COMPETITIONS</span>
-            </h1>
-          </div>
-          <button
-            onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
-          >
-            <Plus size={16} /> Add Competition
-          </button>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 md:p-8 rounded-3xl">
+        <div>
+          <span className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20 mb-2 inline-block">
+            Tournaments & Cups
+          </span>
+          <h1 className="text-2xl md:text-3xl font-black text-white italic tracking-tight uppercase">
+            Manage <span className="text-blue-500">Competitions</span>
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Setup leagues, knockout tournaments, cups, and friendly fixture series.
+          </p>
         </div>
 
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-500 text-sm font-bold flex items-center justify-between"
-          >
-            <span>{error}</span>
-            <button onClick={() => setError(null)} className="p-1 hover:bg-red-500/20 rounded-lg transition-colors">
-              <X size={16} />
-            </button>
-          </motion.div>
-        )}
+        <button
+          onClick={() => handleOpenModal()}
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-blue-600/30"
+        >
+          <Plus size={16} />
+          <span>Add Competition</span>
+        </button>
+      </div>
 
-        {/* Modal/Form */}
-        {(isAdding || editingId) && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm"
-          >
-            <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 w-full max-w-xl shadow-2xl">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">
-                  {editingId ? 'Edit' : 'Add'} Competition
+      {/* Competitions List */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8">
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Loading tournaments...</p>
+          </div>
+        ) : competitions.length === 0 ? (
+          <div className="text-center py-16 text-slate-500">
+            <Trophy size={40} className="mx-auto mb-3 opacity-40" />
+            <p className="text-xs font-bold uppercase tracking-wider">No competitions setup yet</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {competitions.map((comp) => (
+              <motion.div
+                key={comp.id}
+                layout
+                className="bg-slate-950 border border-slate-800/80 hover:border-slate-700 rounded-3xl p-6 flex flex-col justify-between transition-all shadow-md group"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                      <Trophy size={24} />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleOpenModal(comp)}
+                        className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+                      >
+                        <Edit2 size={13} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(comp)}
+                        className="p-2 bg-slate-900 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <h3 className="text-base font-black text-white uppercase italic tracking-tight mb-2">
+                    {comp.name}
+                  </h3>
+
+                  <div className="space-y-1.5 text-xs text-slate-400 font-mono">
+                    <div className="flex items-center gap-1.5">
+                      <Layout size={12} className="text-blue-400" />
+                      <span className="capitalize">{comp.type} format</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Calendar size={12} className="text-blue-400" />
+                      <span>Season {comp.season}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+                  <span
+                    className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                      comp.status === 'active'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        : comp.status === 'completed'
+                        ? 'bg-slate-800 text-slate-400'
+                        : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                    }`}
+                  >
+                    {comp.status}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal */}
+      <AnimatePresence>
+        {isAdding && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+                <h2 className="text-lg font-black text-white uppercase tracking-tight">
+                  {editingComp ? 'Edit Competition' : 'Create Tournament Competition'}
                 </h2>
-                <button onClick={() => { setIsAdding(false); setEditingId(null); }} className="text-slate-500 hover:text-white transition-colors">
-                  <X size={24} />
+                <button
+                  onClick={() => {
+                    setIsAdding(false);
+                    setEditingComp(null);
+                  }}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X size={18} />
                 </button>
               </div>
-              <form onSubmit={handleSave} className="space-y-6">
+
+              <form onSubmit={handleSave} className="space-y-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Competition Name</label>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                    Tournament Title
+                  </label>
                   <input
                     type="text"
                     required
                     value={formData.name}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Champions League 2024"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g. Karachi Premier League"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-bold outline-none focus:border-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-6">
+
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Format Type</label>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                      Tournament Type
+                    </label>
                     <select
                       value={formData.type}
-                      onChange={e => setFormData({ ...formData, type: e.target.value as any })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-bold outline-none focus:border-blue-500"
                     >
                       <option value="league">League Table</option>
                       <option value="knockout">Knockout / Cup</option>
                       <option value="friendly">Friendly Series</option>
                     </select>
                   </div>
+
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Season</label>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                      Season
+                    </label>
                     <input
                       type="text"
                       required
                       value={formData.season}
-                      onChange={e => setFormData({ ...formData, season: e.target.value })}
-                      placeholder="e.g. 2024/25"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
+                      onChange={(e) => setFormData({ ...formData, season: e.target.value })}
+                      placeholder="2024/25"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none focus:border-blue-500"
                     />
                   </div>
                 </div>
+
                 <div>
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Current Status</label>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                    Current Status
+                  </label>
                   <select
                     value={formData.status}
-                    onChange={e => setFormData({ ...formData, status: e.target.value as any })}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-bold outline-none focus:border-blue-500"
                   >
-                    <option value="active">Currently Playing</option>
-                    <option value="completed">Finished</option>
-                    <option value="upcoming">Future Event</option>
+                    <option value="active">Active (Ongoing)</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="completed">Completed</option>
                   </select>
                 </div>
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest transition-all mt-4 flex items-center justify-center gap-2"
-                >
-                  <Save size={16} /> {editingId ? 'Update' : 'Create'} Competition
-                </button>
-              </form>
-            </div>
-          </motion.div>
-        )}
 
-        {/* Competitions List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {competitions.length > 0 ? competitions.map((comp) => (
-            <motion.div
-              key={comp.id}
-              layout
-              className="bg-slate-900 border border-slate-800 rounded-3xl p-8 hover:border-blue-500/50 transition-all group"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-12 h-12 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-500">
-                  <Trophy size={24} />
-                </div>
-                <div className="flex gap-2">
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
                   <button
-                    onClick={() => { setEditingId(comp.id); setFormData(comp); }}
-                    className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                    type="button"
+                    onClick={() => {
+                      setIsAdding(false);
+                      setEditingComp(null);
+                    }}
+                    className="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-300 font-bold text-xs uppercase hover:bg-slate-800"
                   >
-                    <Edit2 size={16} />
+                    Cancel
                   </button>
                   <button
-                    onClick={() => handleDelete(comp.id)}
-                    className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-red-500 transition-colors"
+                    type="submit"
+                    disabled={saving}
+                    className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg disabled:opacity-50"
                   >
-                    <Trash2 size={16} />
+                    {saving ? 'Saving...' : editingComp ? 'Save Changes' : 'Create Tournament'}
                   </button>
                 </div>
-              </div>
-              <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-4">{comp.name}</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-slate-500 text-xs font-bold uppercase tracking-widest">
-                  <Layout size={14} className="text-blue-500" /> {comp.type}
-                </div>
-                <div className="flex items-center gap-3 text-slate-500 text-xs font-bold uppercase tracking-widest">
-                  <Calendar size={14} className="text-blue-500" /> Season {comp.season}
-                </div>
-              </div>
-              <div className="mt-8 pt-6 border-t border-slate-800 flex items-center justify-between">
-                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                  comp.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' :
-                  comp.status === 'completed' ? 'bg-slate-800 text-slate-500' :
-                  'bg-orange-500/10 text-orange-500'
-                }`}>
-                  {comp.status}
-                </span>
-              </div>
+              </form>
             </motion.div>
-          )) : (
-            <div className="col-span-full py-24 text-center bg-slate-900/50 border border-slate-800 border-dashed rounded-3xl">
-              <p className="text-slate-500 font-bold uppercase tracking-widest">No competitions recorded yet.</p>
-            </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="Delete Competition?"
+        message={`Are you sure you want to remove "${deleteTarget?.name}"?`}
+        confirmText="Delete Competition"
+        isDangerous={true}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };

@@ -1,44 +1,27 @@
 import { 
   collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, setDoc, 
-  query, where, serverTimestamp 
+  query, where, serverTimestamp, orderBy, limit 
 } from 'firebase/firestore';
-import { db } from './firebase';
-import { Team, Player, Match, News, Competition, Trophy, ClubSettings, GalleryItem } from '../types';
+import { db, auth } from './firebase';
+import { 
+  Team, Player, Match, News, Competition, Trophy, ClubSettings, GalleryItem, 
+  MediaItem, ActivityLog 
+} from '../types';
 import { handleFirestoreError, OperationType } from '../contexts/FirebaseContext';
+import { DEFAULT_FULL_SETTINGS } from '../data/defaultConfig';
 
-export const DEFAULT_CLUB_SETTINGS: ClubSettings = {
-  name: "Faryal FC",
-  shortName: "FFC",
-  founded: "2024",
-  logo: "/logo.png",
-  primaryColor: "#002d62",
-  secondaryColor: "#ffffff",
-  stadium: "Faryal Ground",
-  ground: {
-    name: "Faryal FC Ground",
-    address: "20-A Main Rd, Model Colony Block 24 Model Colony, Karachi, 75080, Pakistan",
-    latitude: 24.903822,
-    longitude: 67.194202,
-    mapsUrl: "https://share.google/WntzBRDQxKW4EUPPI"
-  },
-  history: "Faryal FC was established in 2024 with a vision to build a world-class footballing community. Starting from local roots in Karachi, the club has quickly grown into a competitive force, emphasizing youth development, tactical excellence, and a spirit that never says die.",
-  vision: "To become the premier destination for footballing talent in the region.",
-  mission: "To develop technically gifted players who play with passion and integrity.",
-  socials: {
-    instagram: "https://instagram.com/faryalfc",
-    facebook: "https://facebook.com/faryalfc",
-    whatsapp: "https://wa.me/923000000000"
-  },
-  contact: {
-    email: "info@faryalfc.com",
-    phone: "+92 300 000 0000",
-    address: "20-A Main Rd, Model Colony, Karachi, Pakistan"
-  }
-};
+export const DEFAULT_CLUB_SETTINGS = DEFAULT_FULL_SETTINGS;
 
 export const api = {
   teams: {
     getAll: async (): Promise<Team[]> => {
+      try {
+        const res = await fetch('/api/teams');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) return data;
+        }
+      } catch {}
       try {
         const snap = await getDocs(collection(db, 'teams'));
         return snap.docs.map(d => ({ id: d.id, ...d.data() } as Team));
@@ -48,6 +31,10 @@ export const api = {
       }
     },
     getOne: async (id: string): Promise<Team> => {
+      try {
+        const res = await fetch(`/api/teams/${id}`);
+        if (res.ok) return await res.json();
+      } catch {}
       try {
         const d = await getDoc(doc(db, 'teams', id));
         if (!d.exists()) throw new Error('Team not found');
@@ -59,12 +46,26 @@ export const api = {
     },
     create: async (data: Partial<Team>): Promise<Team> => {
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch('/api/teams', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          const item = await res.json();
+          api.activity.log('Created Team', `Added team ${data.name || ''}`).catch(() => {});
+          return item;
+        }
+      } catch {}
+      try {
         const docRef = await addDoc(collection(db, 'teams'), {
           ...data,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
         const d = await getDoc(docRef);
+        api.activity.log('Created Team', `Added team ${data.name || ''}`).catch(() => {});
         return { id: d.id, ...d.data() } as Team;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'teams');
@@ -73,12 +74,26 @@ export const api = {
     },
     update: async (id: string, data: Partial<Team>): Promise<Team> => {
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch(`/api/teams/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          const item = await res.json();
+          api.activity.log('Updated Team', `Modified team ${data.name || id}`).catch(() => {});
+          return item;
+        }
+      } catch {}
+      try {
         const { id: _, ...rest } = data as any;
         await updateDoc(doc(db, 'teams', id), {
           ...rest,
           updatedAt: serverTimestamp()
         });
         const d = await getDoc(doc(db, 'teams', id));
+        api.activity.log('Updated Team', `Modified team ${data.name || id}`).catch(() => {});
         return { id: d.id, ...d.data() } as Team;
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `teams/${id}`);
@@ -87,7 +102,19 @@ export const api = {
     },
     delete: async (id: string): Promise<void> => {
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch(`/api/teams/${id}`, {
+          method: 'DELETE',
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+        });
+        if (res.ok) {
+          api.activity.log('Deleted Team', `Removed team ${id}`).catch(() => {});
+          return;
+        }
+      } catch {}
+      try {
         await deleteDoc(doc(db, 'teams', id));
+        api.activity.log('Deleted Team', `Removed team ${id}`).catch(() => {});
       } catch (error) {
         handleFirestoreError(error, OperationType.DELETE, `teams/${id}`);
         throw error;
@@ -98,6 +125,18 @@ export const api = {
   players: {
     getAll: async (): Promise<Player[]> => {
       try {
+        const res = await fetch('/api/players');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            return data;
+          }
+        }
+      } catch (err) {
+        console.warn('Fetch /api/players failed, falling back to Firestore:', err);
+      }
+
+      try {
         const playersSnap = await getDocs(collection(db, 'players'));
         const players = playersSnap.docs.map(d => ({ id: d.id, ...d.data() } as Player));
 
@@ -105,9 +144,7 @@ export const api = {
         try {
           const matchesSnap = await getDocs(query(collection(db, 'matches'), where('status', '==', 'completed')));
           matches = matchesSnap.docs.map(d => d.data() as Match);
-        } catch {
-          // Non-blocking if matches query fails
-        }
+        } catch {}
 
         return players.map(player => {
           let goals = 0, assists = 0, yellowCards = 0, redCards = 0, appearances = 0;
@@ -144,67 +181,39 @@ export const api = {
         });
       } catch (error) {
         handleFirestoreError(error, OperationType.LIST, 'players');
-        try {
-          const res = await fetch('/api/players');
-          if (res.ok) return await res.json();
-        } catch {}
         return [];
       }
     },
     getOne: async (id: string): Promise<Player> => {
       try {
+        const res = await fetch(`/api/players/${id}`);
+        if (res.ok) return await res.json();
+      } catch {}
+
+      try {
         const d = await getDoc(doc(db, 'players', id));
         if (!d.exists()) throw new Error('Player not found');
-        const player = { id: d.id, ...d.data() } as Player;
-
-        let matches: Match[] = [];
-        try {
-          const matchesSnap = await getDocs(query(collection(db, 'matches'), where('status', '==', 'completed')));
-          matches = matchesSnap.docs.map(doc => doc.data() as Match);
-        } catch {
-          // ignore
-        }
-
-        let goals = 0, assists = 0, yellowCards = 0, redCards = 0, appearances = 0;
-        matches.forEach(match => {
-          const participated = match.events?.some(e => e.playerId === player.id || e.assistId === player.id);
-          if (participated) appearances++;
-
-          if (match.events) {
-            match.events.forEach(event => {
-              if (event.playerId === player.id) {
-                if (event.type === 'goal') goals++;
-                if (event.type === 'yellow_card') yellowCards++;
-                if (event.type === 'red_card') redCards++;
-              }
-              if (event.assistId === player.id) {
-                assists++;
-              }
-            });
-          }
-        });
-
-        return {
-          ...player,
-          stats: {
-            appearances: appearances || player.stats?.appearances || 0,
-            goals: goals || player.stats?.goals || 0,
-            assists: assists || player.stats?.assists || 0,
-            yellowCards: yellowCards || player.stats?.yellowCards || 0,
-            redCards: redCards || player.stats?.redCards || 0,
-            cleanSheets: player.stats?.cleanSheets || 0
-          }
-        };
+        return { id: d.id, ...d.data() } as Player;
       } catch (error) {
         handleFirestoreError(error, OperationType.GET, `players/${id}`);
-        try {
-          const res = await fetch(`/api/players/${id}`);
-          if (res.ok) return await res.json();
-        } catch {}
         throw error;
       }
     },
     create: async (data: Partial<Player>): Promise<Player> => {
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch('/api/players', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          const item = await res.json();
+          api.activity.log('Added Player', `Added squad member ${data.name || ''}`).catch(() => {});
+          return item;
+        }
+      } catch {}
+
       try {
         const docRef = await addDoc(collection(db, 'players'), {
           ...data,
@@ -212,6 +221,7 @@ export const api = {
           updatedAt: serverTimestamp()
         });
         const d = await getDoc(docRef);
+        api.activity.log('Added Player', `Added squad member ${data.name || ''}`).catch(() => {});
         return { id: d.id, ...d.data() } as Player;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'players');
@@ -220,12 +230,27 @@ export const api = {
     },
     update: async (id: string, data: Partial<Player>): Promise<Player> => {
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch(`/api/players/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          const item = await res.json();
+          api.activity.log('Updated Player', `Updated player ${data.name || id}`).catch(() => {});
+          return item;
+        }
+      } catch {}
+
+      try {
         const { id: _, ...rest } = data as any;
         await updateDoc(doc(db, 'players', id), {
           ...rest,
           updatedAt: serverTimestamp()
         });
         const d = await getDoc(doc(db, 'players', id));
+        api.activity.log('Updated Player', `Updated player ${data.name || id}`).catch(() => {});
         return { id: d.id, ...d.data() } as Player;
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `players/${id}`);
@@ -234,7 +259,20 @@ export const api = {
     },
     delete: async (id: string): Promise<void> => {
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch(`/api/players/${id}`, {
+          method: 'DELETE',
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+        });
+        if (res.ok) {
+          api.activity.log('Deleted Player', `Deleted player ${id}`).catch(() => {});
+          return;
+        }
+      } catch {}
+
+      try {
         await deleteDoc(doc(db, 'players', id));
+        api.activity.log('Deleted Player', `Deleted player ${id}`).catch(() => {});
       } catch (error) {
         handleFirestoreError(error, OperationType.DELETE, `players/${id}`);
         throw error;
@@ -245,6 +283,14 @@ export const api = {
   matches: {
     getAll: async (): Promise<Match[]> => {
       try {
+        const res = await fetch('/api/matches');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) return data;
+        }
+      } catch {}
+
+      try {
         const snap = await getDocs(collection(db, 'matches'));
         return snap.docs.map(d => ({ id: d.id, ...d.data() } as Match));
       } catch (error) {
@@ -253,6 +299,11 @@ export const api = {
       }
     },
     getOne: async (id: string): Promise<Match> => {
+      try {
+        const res = await fetch(`/api/matches/${id}`);
+        if (res.ok) return await res.json();
+      } catch {}
+
       try {
         const d = await getDoc(doc(db, 'matches', id));
         if (!d.exists()) throw new Error('Match not found');
@@ -264,12 +315,27 @@ export const api = {
     },
     create: async (data: Partial<Match>): Promise<Match> => {
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch('/api/matches', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          const item = await res.json();
+          api.activity.log('Created Match', `Added match ${data.homeTeamName} vs ${data.awayTeamName}`).catch(() => {});
+          return item;
+        }
+      } catch {}
+
+      try {
         const docRef = await addDoc(collection(db, 'matches'), {
           ...data,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
         const d = await getDoc(docRef);
+        api.activity.log('Created Match', `Added match ${data.homeTeamName} vs ${data.awayTeamName}`).catch(() => {});
         return { id: d.id, ...d.data() } as Match;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'matches');
@@ -278,12 +344,27 @@ export const api = {
     },
     update: async (id: string, data: Partial<Match>): Promise<Match> => {
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch(`/api/matches/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          const item = await res.json();
+          api.activity.log('Updated Match', `Updated fixture/score ${data.homeTeamName || ''} vs ${data.awayTeamName || ''}`).catch(() => {});
+          return item;
+        }
+      } catch {}
+
+      try {
         const { id: _, ...rest } = data as any;
         await updateDoc(doc(db, 'matches', id), {
           ...rest,
           updatedAt: serverTimestamp()
         });
         const d = await getDoc(doc(db, 'matches', id));
+        api.activity.log('Updated Match', `Updated match ${id}`).catch(() => {});
         return { id: d.id, ...d.data() } as Match;
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `matches/${id}`);
@@ -292,7 +373,20 @@ export const api = {
     },
     delete: async (id: string): Promise<void> => {
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch(`/api/matches/${id}`, {
+          method: 'DELETE',
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+        });
+        if (res.ok) {
+          api.activity.log('Deleted Match', `Deleted match ${id}`).catch(() => {});
+          return;
+        }
+      } catch {}
+
+      try {
         await deleteDoc(doc(db, 'matches', id));
+        api.activity.log('Deleted Match', `Deleted match ${id}`).catch(() => {});
       } catch (error) {
         handleFirestoreError(error, OperationType.DELETE, `matches/${id}`);
         throw error;
@@ -303,6 +397,14 @@ export const api = {
   news: {
     getAll: async (): Promise<News[]> => {
       try {
+        const res = await fetch('/api/news');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) return data;
+        }
+      } catch {}
+
+      try {
         const snap = await getDocs(collection(db, 'news'));
         return snap.docs.map(d => ({ id: d.id, ...d.data() } as News));
       } catch (error) {
@@ -311,6 +413,11 @@ export const api = {
       }
     },
     getOne: async (id: string): Promise<News> => {
+      try {
+        const res = await fetch(`/api/news/${id}`);
+        if (res.ok) return await res.json();
+      } catch {}
+
       try {
         const d = await getDoc(doc(db, 'news', id));
         if (!d.exists()) throw new Error('News item not found');
@@ -322,12 +429,27 @@ export const api = {
     },
     create: async (data: Partial<News>): Promise<News> => {
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch('/api/news', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          const item = await res.json();
+          api.activity.log('Published News', `Added article ${data.title || ''}`).catch(() => {});
+          return item;
+        }
+      } catch {}
+
+      try {
         const docRef = await addDoc(collection(db, 'news'), {
           ...data,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
         const d = await getDoc(docRef);
+        api.activity.log('Published News', `Added article ${data.title || ''}`).catch(() => {});
         return { id: d.id, ...d.data() } as News;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'news');
@@ -336,12 +458,27 @@ export const api = {
     },
     update: async (id: string, data: Partial<News>): Promise<News> => {
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch(`/api/news/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          const item = await res.json();
+          api.activity.log('Updated News', `Modified article ${data.title || id}`).catch(() => {});
+          return item;
+        }
+      } catch {}
+
+      try {
         const { id: _, ...rest } = data as any;
         await updateDoc(doc(db, 'news', id), {
           ...rest,
           updatedAt: serverTimestamp()
         });
         const d = await getDoc(doc(db, 'news', id));
+        api.activity.log('Updated News', `Modified article ${data.title || id}`).catch(() => {});
         return { id: d.id, ...d.data() } as News;
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `news/${id}`);
@@ -350,7 +487,20 @@ export const api = {
     },
     delete: async (id: string): Promise<void> => {
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch(`/api/news/${id}`, {
+          method: 'DELETE',
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+        });
+        if (res.ok) {
+          api.activity.log('Deleted News', `Removed article ${id}`).catch(() => {});
+          return;
+        }
+      } catch {}
+
+      try {
         await deleteDoc(doc(db, 'news', id));
+        api.activity.log('Deleted News', `Removed article ${id}`).catch(() => {});
       } catch (error) {
         handleFirestoreError(error, OperationType.DELETE, `news/${id}`);
         throw error;
@@ -454,24 +604,144 @@ export const api = {
     }
   },
 
+  media: {
+    getAll: async (): Promise<MediaItem[]> => {
+      try {
+        const snap = await getDocs(collection(db, 'media'));
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as MediaItem));
+      } catch {
+        return [];
+      }
+    },
+    create: async (data: Partial<MediaItem>): Promise<MediaItem> => {
+      try {
+        const docRef = await addDoc(collection(db, 'media'), {
+          ...data,
+          uploadedAt: new Date().toISOString()
+        });
+        const d = await getDoc(docRef);
+        api.activity.log('Uploaded Media', `Added asset ${data.name || ''}`).catch(() => {});
+        return { id: d.id, ...d.data() } as MediaItem;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, 'media');
+        throw error;
+      }
+    },
+    delete: async (id: string): Promise<void> => {
+      try {
+        await deleteDoc(doc(db, 'media', id));
+        api.activity.log('Deleted Media', `Deleted asset ${id}`).catch(() => {});
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `media/${id}`);
+        throw error;
+      }
+    }
+  },
+
+  activity: {
+    getAll: async (): Promise<ActivityLog[]> => {
+      try {
+        const snap = await getDocs(query(collection(db, 'activities'), orderBy('timestamp', 'desc'), limit(50)));
+        return snap.docs.map(d => ({ id: d.id, ...d.data() } as ActivityLog));
+      } catch {
+        return [];
+      }
+    },
+    log: async (action: string, details: string): Promise<void> => {
+      try {
+        const userEmail = auth.currentUser?.email || 'admin@faryalfc.com';
+        await addDoc(collection(db, 'activities'), {
+          adminEmail: userEmail,
+          action,
+          details,
+          timestamp: new Date().toISOString()
+        });
+      } catch {}
+    }
+  },
+
+  backup: {
+    exportData: async (): Promise<any> => {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/backup', {
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+      });
+      if (!res.ok) throw new Error('Failed to export backup');
+      return await res.json();
+    },
+    restoreData: async (data: any): Promise<any> => {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch('/api/backup/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ data })
+      });
+      if (!res.ok) throw new Error('Failed to restore backup');
+      api.activity.log('Restored Backup', 'Imported club dataset from backup').catch(() => {});
+      return await res.json();
+    }
+  },
+
+  upload: {
+    image: async (base64Data: string, name: string): Promise<string> => {
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64Data, name })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return data.url;
+        }
+      } catch {}
+      return base64Data;
+    }
+  },
+
   settings: {
     get: async (): Promise<ClubSettings> => {
       try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.name) {
+            return { ...DEFAULT_FULL_SETTINGS, ...data };
+          }
+        }
+      } catch {}
+
+      try {
         const d = await getDoc(doc(db, 'settings', 'club'));
         if (d.exists()) {
-          return d.data() as ClubSettings;
+          return { ...DEFAULT_FULL_SETTINGS, ...(d.data() as ClubSettings) };
         }
-        return DEFAULT_CLUB_SETTINGS;
+        return DEFAULT_FULL_SETTINGS;
       } catch (error) {
-        console.warn('Error reading settings from Firestore, returning default club settings:', error);
-        return DEFAULT_CLUB_SETTINGS;
+        console.warn('Error reading settings from Firestore, returning defaults:', error);
+        return DEFAULT_FULL_SETTINGS;
       }
     },
     update: async (data: Partial<ClubSettings>): Promise<ClubSettings> => {
       try {
+        const token = await auth.currentUser?.getIdToken();
+        const res = await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          const item = await res.json();
+          api.activity.log('Updated Settings', 'Modified global website configuration').catch(() => {});
+          return item;
+        }
+      } catch {}
+
+      try {
         await setDoc(doc(db, 'settings', 'club'), data, { merge: true });
         const d = await getDoc(doc(db, 'settings', 'club'));
-        return (d.data() as ClubSettings) || DEFAULT_CLUB_SETTINGS;
+        api.activity.log('Updated Settings', 'Modified global website configuration').catch(() => {});
+        return (d.data() as ClubSettings) || DEFAULT_FULL_SETTINGS;
       } catch (error) {
         handleFirestoreError(error, OperationType.WRITE, 'settings/club');
         throw error;
@@ -482,6 +752,14 @@ export const api = {
   standings: {
     get: async (): Promise<Team[]> => {
       try {
+        const res = await fetch('/api/standings');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) return data;
+        }
+      } catch {}
+
+      try {
         const teamsSnap = await getDocs(collection(db, 'teams'));
         const teams = teamsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Team));
 
@@ -489,9 +767,7 @@ export const api = {
         try {
           const matchesSnap = await getDocs(query(collection(db, 'matches'), where('status', '==', 'completed')));
           matches = matchesSnap.docs.map(doc => doc.data() as Match);
-        } catch {
-          // Non-blocking
-        }
+        } catch {}
 
         const stats = teams.map((team: Team) => {
           const teamMatches = matches.filter(m => m.homeTeamId === team.id || m.awayTeamId === team.id);
@@ -553,6 +829,7 @@ export const api = {
           createdAt: serverTimestamp()
         });
         const d = await getDoc(docRef);
+        api.activity.log('Added Gallery Photo', `Uploaded image ${data.caption || ''}`).catch(() => {});
         return { id: d.id, ...d.data() } as GalleryItem;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'gallery');
@@ -562,6 +839,7 @@ export const api = {
     delete: async (id: string): Promise<void> => {
       try {
         await deleteDoc(doc(db, 'gallery', id));
+        api.activity.log('Deleted Gallery Photo', `Removed photo ${id}`).catch(() => {});
       } catch (error) {
         handleFirestoreError(error, OperationType.DELETE, `gallery/${id}`);
         throw error;

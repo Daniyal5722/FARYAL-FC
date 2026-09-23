@@ -44,19 +44,17 @@ service cloud.firestore {
     // ---------------------------------------------------------
 
     function isValidPlayer(data) {
-      let requiredFields = ['name', 'number', 'position'];
-      let allowedFields = ['name', 'number', 'position', 'image', 'nationality', 'birthDate', 'height', 'weight', 'bio', 'stats', 'status', 'createdAt', 'updatedAt'];
+      let requiredFields = ['name'];
+      let allowedFields = ['name', 'number', 'position', 'image', 'nationality', 'birthDate', 'height', 'weight', 'bio', 'stats', 'status', 'isCaptain', 'createdAt', 'updatedAt'];
       return data.keys().hasAll(requiredFields) &&
              data.keys().hasOnly(allowedFields) &&
              data.name is string && data.name.size() <= 100 &&
-             data.number is number &&
-             data.position is string &&
              (!('status' in data) || data.status in ['active', 'injured', 'suspended', 'inactive']);
     }
 
     function isValidTeam(data) {
       let requiredFields = ['name', 'shortName'];
-      let allowedFields = ['name', 'shortName', 'logo', 'image', 'color', 'secondaryColor', 'captainId', 'coach', 'status', 'played', 'wins', 'draws', 'losses', 'goalsFor', 'goalsAgainst', 'goalDifference', 'points', 'createdAt', 'updatedAt'];
+      let allowedFields = ['name', 'shortName', 'logo', 'image', 'color', 'secondaryColor', 'captainId', 'coach', 'status', 'description', 'played', 'wins', 'draws', 'losses', 'goalsFor', 'goalsAgainst', 'goalDifference', 'points', 'createdAt', 'updatedAt'];
       return data.keys().hasAll(requiredFields) &&
              data.keys().hasOnly(allowedFields) &&
              data.name is string && data.name.size() <= 100 &&
@@ -65,7 +63,7 @@ service cloud.firestore {
 
     function isValidMatch(data) {
       let requiredFields = ['homeTeamId', 'awayTeamId', 'date', 'status'];
-      let allowedFields = ['homeTeamId', 'awayTeamId', 'homeTeamName', 'awayTeamName', 'date', 'time', 'venue', 'competition', 'status', 'homeScore', 'awayScore', 'events', 'createdAt', 'updatedAt'];
+      let allowedFields = ['homeTeamId', 'awayTeamId', 'homeTeamName', 'awayTeamName', 'date', 'time', 'venue', 'competition', 'status', 'homeScore', 'awayScore', 'events', 'notes', 'matchReport', 'createdAt', 'updatedAt'];
       return data.keys().hasAll(requiredFields) &&
              data.keys().hasOnly(allowedFields) &&
              data.status in ['upcoming', 'live', 'completed', 'postponed', 'cancelled'];
@@ -73,7 +71,7 @@ service cloud.firestore {
 
     function isValidNews(data) {
       let requiredFields = ['title', 'content', 'date'];
-      let allowedFields = ['title', 'content', 'image', 'category', 'date', 'author', 'createdAt', 'updatedAt'];
+      let allowedFields = ['title', 'content', 'summary', 'image', 'category', 'date', 'author', 'status', 'createdAt', 'updatedAt'];
       return data.keys().hasAll(requiredFields) &&
              data.keys().hasOnly(allowedFields) &&
              data.title is string && data.title.size() <= 200;
@@ -136,7 +134,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    match /settings/club {
+    match /media/{mediaId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /activities/{activityId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /settings/{settingDoc} {
       allow read: if true;
       allow write: if isAdmin();
     }

@@ -1,31 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trophy, Trash2, Edit2, Loader2, Calendar, Save, X, ImageIcon } from 'lucide-react';
+import { Plus, Trophy, Trash2, Edit2, Save, X, Award, Upload } from 'lucide-react';
 import { api } from '../../lib/api';
 import { Trophy as TrophyType } from '../../types';
+import { useToast } from '../../contexts/ToastContext';
+import { ConfirmModal } from '../../components/admin/ConfirmModal';
 
 export const ManageTrophies: React.FC = () => {
+  const { success, error: toastError } = useToast();
   const [trophies, setTrophies] = useState<TrophyType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTrophy, setEditingTrophy] = useState<TrophyType | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TrophyType | null>(null);
+  const [saving, setSaving] = useState(false);
+
   const [formData, setFormData] = useState<Partial<TrophyType>>({
     competition: '',
     season: '2024/25',
     image: '',
     achievement: 'Winner',
-    description: ''
+    description: '',
   });
 
   const fetchData = async () => {
-    setError(null);
+    setLoading(true);
     try {
       const data = await api.trophies.getAll();
       setTrophies(data);
     } catch (err: any) {
-      console.error('Error fetching trophies:', err);
-      setError(err.message || 'Failed to load trophies');
+      toastError(err.message || 'Failed to load trophies');
     } finally {
       setLoading(false);
     }
@@ -35,193 +39,255 @@ export const ManageTrophies: React.FC = () => {
     fetchData();
   }, []);
 
+  const handleOpenModal = (trophy?: TrophyType) => {
+    if (trophy) {
+      setEditingTrophy(trophy);
+      setFormData(trophy);
+    } else {
+      setEditingTrophy(null);
+      setFormData({
+        competition: '',
+        season: '2024/25',
+        image: '',
+        achievement: 'Winner',
+        description: '',
+      });
+    }
+    setIsAdding(true);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    if (!formData.competition?.trim()) return;
+
+    setSaving(true);
     try {
-      if (editingId) {
-        await api.trophies.update(editingId, formData);
+      if (editingTrophy) {
+        await api.trophies.update(editingTrophy.id, formData);
+        success('Trophy record updated successfully!');
       } else {
         await api.trophies.create(formData);
+        success('New trophy added to Hall of Fame!');
       }
       setIsAdding(false);
-      setEditingId(null);
-      setFormData({ competition: '', season: '2024/25', image: '', achievement: 'Winner', description: '' });
+      setEditingTrophy(null);
       fetchData();
     } catch (err: any) {
-      console.error('Error saving trophy:', err);
-      setError(err.message || 'Failed to save trophy');
+      toastError(err.message || 'Failed to save trophy');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this trophy record?')) return;
-    setError(null);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.trophies.delete(id);
+      await api.trophies.delete(deleteTarget.id);
+      success('Trophy removed from Hall of Fame');
+      setDeleteTarget(null);
       fetchData();
     } catch (err: any) {
-      console.error('Error deleting trophy:', err);
-      setError(err.message || 'Failed to delete trophy');
+      toastError(err.message || 'Failed to delete trophy');
     }
   };
-
-  if (loading) {
-    return (
-      <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen flex items-center justify-center">
-        <Loader2 className="text-blue-500 animate-spin" size={48} />
-      </div>
-    );
-  }
 
   return (
-    <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          <div>
-            <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-xs mb-4 block">Hall of Fame</span>
-            <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
-              MANAGE <span className="text-slate-800">TROPHIES</span>
-            </h1>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-6 md:p-8 rounded-3xl">
+        <div>
+          <span className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20 mb-2 inline-block">
+            Hall of Fame
+          </span>
+          <h1 className="text-2xl md:text-3xl font-black text-white italic tracking-tight uppercase">
+            Trophies & <span className="text-amber-400">Honours</span>
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Showcase championship victories, tournament cups, runner-up medals, and club achievements.
+          </p>
+        </div>
+
+        <button
+          onClick={() => handleOpenModal()}
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-600/30"
+        >
+          <Plus size={16} />
+          <span>Add Trophy</span>
+        </button>
+      </div>
+
+      {/* Trophies Grid */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8">
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Loading trophies...</p>
           </div>
-          <button
-            onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
-          >
-            <Plus size={16} /> Add Trophy
-          </button>
-        </div>
-
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 p-4 bg-red-500/10 border border-red-500/50 rounded-2xl text-red-500 text-sm font-bold flex items-center justify-between"
-          >
-            <span>{error}</span>
-            <button onClick={() => setError(null)} className="p-1 hover:bg-red-500/20 rounded-lg transition-colors">
-              <X size={16} />
-            </button>
-          </motion.div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {trophies.map((trophy) => (
-            <motion.div
-              key={trophy.id}
-              layout
-              className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 hover:border-blue-500/50 transition-all group relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-600 opacity-5 blur-3xl -mr-16 -mt-16" />
-              <div className="flex items-center justify-between mb-8">
-                <div className="w-16 h-16 rounded-2xl bg-amber-600/10 flex items-center justify-center text-amber-500 border border-amber-600/20">
-                  <Trophy size={32} />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => { setEditingId(trophy.id); setFormData(trophy); }}
-                    className="p-3 bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all"
-                  >
-                    <Edit2 size={18} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(trophy.id)}
-                    className="p-3 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white rounded-xl transition-all"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              </div>
-              <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-2">{trophy.competition}</h3>
-              <p className="text-amber-500 font-black text-xs uppercase tracking-[0.2em] mb-6">{trophy.achievement} — {trophy.season}</p>
-              <p className="text-slate-500 text-xs font-bold leading-relaxed">{trophy.description}</p>
-            </motion.div>
-          ))}
-          {trophies.length === 0 && (
-            <div className="col-span-full py-24 text-center bg-slate-900/50 border border-slate-800 border-dashed rounded-3xl">
-              <p className="text-slate-500 font-bold uppercase tracking-widest">No trophies recorded yet.</p>
-            </div>
-          )}
-        </div>
-
-        <AnimatePresence>
-          {(isAdding || editingId) && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-sm"
-            >
+        ) : trophies.length === 0 ? (
+          <div className="text-center py-16 text-slate-500">
+            <Trophy size={40} className="mx-auto mb-3 opacity-40 text-amber-500" />
+            <p className="text-xs font-bold uppercase tracking-wider">No trophies recorded yet</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {trophies.map((trophy) => (
               <motion.div
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-10 w-full max-w-xl shadow-2xl"
+                key={trophy.id}
+                layout
+                className="bg-slate-950 border border-slate-800/80 hover:border-amber-500/40 rounded-3xl p-6 transition-all relative overflow-hidden flex flex-col justify-between shadow-md group"
               >
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">
-                    {editingId ? 'Edit' : 'Add'} Trophy Record
-                  </h2>
-                  <button onClick={() => { setIsAdding(false); setEditingId(null); }} className="text-slate-500 hover:text-white transition-colors">
-                    <X size={24} />
-                  </button>
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                      <Trophy size={24} />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleOpenModal(trophy)}
+                        className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+                      >
+                        <Edit2 size={13} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(trophy)}
+                        className="p-2 bg-slate-900 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <h3 className="text-base font-black text-white uppercase italic tracking-tight mb-1">
+                    {trophy.competition}
+                  </h3>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded inline-block mb-3">
+                    {trophy.achievement} • {trophy.season}
+                  </span>
+                  <p className="text-xs text-slate-400 leading-relaxed">{trophy.description}</p>
                 </div>
-                <form onSubmit={handleSave} className="space-y-6">
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Trophy Modal */}
+      <AnimatePresence>
+        {isAdding && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+                <h2 className="text-lg font-black text-white uppercase tracking-tight">
+                  {editingTrophy ? 'Edit Trophy Honour' : 'Add Trophy Honour'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setIsAdding(false);
+                    setEditingTrophy(null);
+                  }}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSave} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                    Tournament / Competition Title
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.competition}
+                    onChange={(e) => setFormData({ ...formData, competition: e.target.value })}
+                    placeholder="e.g. Karachi Premier Cup"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-bold outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Competition Name</label>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                      Season / Year
+                    </label>
                     <input
                       type="text"
                       required
-                      value={formData.competition}
-                      onChange={e => setFormData({ ...formData, competition: e.target.value })}
-                      placeholder="e.g. Karachi Premier League"
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
+                      value={formData.season}
+                      onChange={(e) => setFormData({ ...formData, season: e.target.value })}
+                      placeholder="2024/25"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none focus:border-amber-500"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Season</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.season}
-                        onChange={e => setFormData({ ...formData, season: e.target.value })}
-                        placeholder="2024/25"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Achievement</label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.achievement}
-                        onChange={e => setFormData({ ...formData, achievement: e.target.value })}
-                        placeholder="Winner / Runner-up"
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
-                      />
-                    </div>
-                  </div>
+
                   <div>
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Description</label>
-                    <textarea
-                      value={formData.description}
-                      onChange={e => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Details about the victory..."
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium min-h-[100px]"
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                      Achievement
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.achievement}
+                      onChange={(e) => setFormData({ ...formData, achievement: e.target.value })}
+                      placeholder="Winner / Champions"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-bold outline-none focus:border-amber-500"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                    Honour Description / Summary
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Brief description of the triumph..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white font-medium outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAdding(false);
+                      setEditingTrophy(null);
+                    }}
+                    className="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-300 font-bold text-xs uppercase hover:bg-slate-800"
+                  >
+                    Cancel
+                  </button>
                   <button
                     type="submit"
-                    className="w-full bg-amber-600 hover:bg-amber-700 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all mt-4 flex items-center justify-center gap-2 shadow-xl shadow-amber-600/20"
+                    disabled={saving}
+                    className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-lg disabled:opacity-50"
                   >
-                    <Save size={20} /> Save Trophy Record
+                    {saving ? 'Saving...' : editingTrophy ? 'Save Changes' : 'Record Trophy'}
                   </button>
-                </form>
-              </motion.div>
+                </div>
+              </form>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="Delete Trophy Record?"
+        message={`Are you sure you want to remove "${deleteTarget?.competition}" from the honours list?`}
+        confirmText="Delete Trophy"
+        isDangerous={true}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };

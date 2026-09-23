@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Trophy } from 'lucide-react';
+import { Menu, X, Trophy, Shield } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { GlobalSearch } from './GlobalSearch';
 import { useClubSettings } from '../hooks/useClubSettings';
 import { DEFAULT_CLUB_SETTINGS } from '../lib/api';
+import { useFirebase } from '../contexts/FirebaseContext';
 
 const NAV_ITEMS = [
   { name: 'Home', path: '/' },
@@ -26,6 +27,7 @@ export const Navbar: React.FC = () => {
   const location = useLocation();
   const { settings: rawSettings } = useClubSettings();
   const settings = rawSettings || DEFAULT_CLUB_SETTINGS;
+  const { user, isAdmin } = useFirebase();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -81,18 +83,43 @@ export const Navbar: React.FC = () => {
                 {item.name}
               </Link>
             ))}
+
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={cn(
+                  'text-[10px] xl:text-[11px] font-black uppercase tracking-[0.15em] transition-all flex items-center gap-1 px-2.5 py-1 rounded-lg border',
+                  location.pathname.startsWith('/admin')
+                    ? 'text-amber-400 bg-amber-500/20 border-amber-500/40'
+                    : 'text-amber-400/90 bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20 hover:text-amber-300'
+                )}
+              >
+                <Shield className="w-3 h-3" />
+                Admin
+              </Link>
+            )}
           </div>
 
           <div className="h-4 w-[1px] bg-slate-800" />
 
           <div className="flex items-center gap-4">
             <GlobalSearch />
-            <Link
-              to="/login"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-blue-600/20 active:scale-95"
-            >
-              PORTAL
-            </Link>
+            {isAdmin ? (
+              <Link
+                to="/admin"
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-amber-500/20 active:scale-95 flex items-center gap-1.5"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                ADMIN PANEL
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-blue-600/20 active:scale-95"
+              >
+                PORTAL
+              </Link>
+            )}
           </div>
         </div>
 
@@ -129,14 +156,26 @@ export const Navbar: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex flex-col gap-6 my-auto">
+            <div className="flex flex-col gap-5 my-auto">
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={() => setIsOpen(false)}
+                  className={cn(
+                    'text-2xl font-black uppercase tracking-tighter italic transition-colors flex items-center gap-3 text-amber-400 bg-amber-500/10 p-3 rounded-2xl border border-amber-500/20'
+                  )}
+                >
+                  <Shield className="w-6 h-6 text-amber-400" />
+                  ADMIN CONTROL PANEL
+                </Link>
+              )}
               {NAV_ITEMS.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
                   onClick={() => setIsOpen(false)}
                   className={cn(
-                    'text-3xl font-black uppercase tracking-tighter italic transition-colors hover:text-blue-500',
+                    'text-2xl md:text-3xl font-black uppercase tracking-tighter italic transition-colors hover:text-blue-500',
                     location.pathname === item.path ? 'text-blue-500' : 'text-slate-300'
                   )}
                 >
@@ -146,6 +185,16 @@ export const Navbar: React.FC = () => {
             </div>
 
             <div className="mt-12 pt-8 border-t border-slate-900 flex flex-col gap-4">
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full text-center bg-amber-500 hover:bg-amber-400 text-slate-950 py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2"
+                >
+                  <Shield size={18} />
+                  ENTER ADMIN PANEL
+                </Link>
+              )}
               <Link
                 to="/login"
                 onClick={() => setIsOpen(false)}

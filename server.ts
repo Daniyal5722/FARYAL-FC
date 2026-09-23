@@ -82,13 +82,15 @@ const requireAdmin = async (req: any, res: any, next: any) => {
 
 // Validation Schemas
 const schemas: Record<string, string[]> = {
-  teams: ["name", "shortName", "logo", "image", "color", "secondaryColor", "captainId", "coach", "status"],
-  players: ["name", "number", "position", "image", "nationality", "birthDate", "height", "weight", "bio", "stats", "status"],
-  matches: ["homeTeamId", "awayTeamId", "homeTeamName", "awayTeamName", "date", "time", "venue", "competition", "status", "homeScore", "awayScore", "events"],
-  news: ["title", "content", "image", "category", "date", "author"],
+  teams: ["name", "shortName", "logo", "image", "color", "secondaryColor", "captainId", "coach", "status", "description", "played", "wins", "draws", "losses", "goalsFor", "goalsAgainst", "goalDifference", "points"],
+  players: ["name", "number", "position", "image", "nationality", "birthDate", "height", "weight", "bio", "stats", "status", "isCaptain"],
+  matches: ["homeTeamId", "awayTeamId", "homeTeamName", "awayTeamName", "date", "time", "venue", "competition", "status", "homeScore", "awayScore", "events", "notes", "matchReport"],
+  news: ["title", "content", "summary", "image", "category", "date", "author", "status"],
   competitions: ["name", "season", "startDate", "endDate", "type", "active", "status"],
   trophies: ["competition", "season", "image", "achievement", "description"],
-  gallery: ["url", "caption", "category", "date"]
+  gallery: ["url", "caption", "category", "date"],
+  media: ["name", "url", "category", "size", "uploadedAt"],
+  activities: ["adminEmail", "action", "details", "timestamp"]
 };
 
 function validateBody(collection: string, body: any) {
@@ -169,7 +171,25 @@ async function startServer() {
   app.get('/api/players', async (req: any, res: any) => {
     try {
       const playersSnapshot = await db.collection('players').get();
-      const players = playersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      let players = playersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      if (players.length === 0) {
+        try {
+          const fallbackContent = await fs.readFile(path.join(process.cwd(), 'data', 'players.json'), 'utf-8');
+          const seedPlayers = JSON.parse(fallbackContent);
+          for (const p of seedPlayers) {
+            const { id, ...data } = p;
+            await db.collection('players').doc(id).set({
+              ...data,
+              createdAt: FieldValue.serverTimestamp(),
+              updatedAt: FieldValue.serverTimestamp()
+            });
+          }
+          players = seedPlayers;
+        } catch (seedErr) {
+          console.error("Error seeding players:", seedErr);
+        }
+      }
       
       const matchesSnapshot = await db.collection('matches').where('status', '==', 'completed').get();
       const matches = matchesSnapshot.docs.map(doc => doc.data());
@@ -277,8 +297,8 @@ async function startServer() {
           const snapshot = await db.collection(collection).get();
           const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           res.json(data);
-        } catch (error) {
-          res.status(500).json({ error: 'Internal Server Error' });
+        } catch {
+          res.json([]);
         }
       });
 
@@ -287,8 +307,8 @@ async function startServer() {
           const doc = await db.collection(collection).doc(req.params.id).get();
           if (doc.exists) res.json({ id: doc.id, ...doc.data() });
           else res.status(404).json({ error: "Not found" });
-        } catch (error) {
-          res.status(500).json({ error: 'Internal Server Error' });
+        } catch {
+          res.status(404).json({ error: "Not found" });
         }
       });
     }
@@ -334,51 +354,59 @@ async function startServer() {
 
   // Settings endpoint
   app.get("/api/settings", async (req, res) => {
+    const defaultSettings = {
+      name: "Faryal FC",
+      shortName: "FFC",
+      founded: "2024",
+      logo: "/logo.png",
+      primaryColor: "#002d62",
+      secondaryColor: "#ffffff",
+      stadium: "Faryal Ground",
+      ground: {
+        name: "Faryal FC Ground",
+        address: "20-A Main Rd, Model Colony Block 24 Model Colony, Karachi, 75080, Pakistan",
+        latitude: 24.903822,
+        longitude: 67.194202,
+        mapsUrl: "https://share.google/WntzBRDQxKW4EUPPI"
+      },
+      history: "Faryal FC was established in 2024 with a vision to build a world-class footballing community. Starting from local roots in Karachi, the club has quickly grown into a competitive force, emphasizing youth development, tactical excellence, and a spirit that never says die.",
+      vision: "To become the premier destination for footballing talent in the region.",
+      mission: "To develop technically gifted players who play with passion and integrity.",
+      socials: {
+        instagram: "https://instagram.com/faryalfc",
+        facebook: "https://facebook.com/faryalfc",
+        whatsapp: "https://wa.me/923000000000"
+      },
+      contact: {
+        email: "info@faryalfc.com",
+        phone: "+92 300 000 0000",
+        address: "20-A Main Rd, Model Colony, Karachi, Pakistan"
+      }
+    };
+
     try {
       const doc = await db.collection('settings').doc('club').get();
       if (doc.exists) {
         res.json(doc.data());
       } else {
-        const defaultSettings = {
-          name: "Faryal FC",
-          shortName: "FFC",
-          founded: "2024",
-          logo: "/logo.png",
-          primaryColor: "#002d62",
-          secondaryColor: "#ffffff",
-          stadium: "Faryal Ground",
-          ground: {
-            name: "Faryal FC Ground",
-            address: "20-A Main Rd, Model Colony Block 24 Model Colony, Karachi, 75080, Pakistan",
-            latitude: 24.903822,
-            longitude: 67.194202,
-            mapsUrl: "https://share.google/WntzBRDQxKW4EUPPI"
-          },
-          history: "Faryal FC was established in 2024 with a vision to build a world-class footballing community. Starting from local roots in Karachi, the club has quickly grown into a competitive force, emphasizing youth development, tactical excellence, and a spirit that never says die.",
-          vision: "To become the premier destination for footballing talent in the region.",
-          mission: "To develop technically gifted players who play with passion and integrity.",
-          socials: {
-            instagram: "https://instagram.com/faryalfc",
-            facebook: "https://facebook.com/faryalfc",
-            whatsapp: "https://wa.me/923000000000"
-          },
-          contact: {
-            email: "info@faryalfc.com",
-            phone: "+92 300 000 0000",
-            address: "20-A Main Rd, Model Colony, Karachi, Pakistan"
-          }
-        };
-        await db.collection('settings').doc('club').set(defaultSettings);
+        try {
+          await db.collection('settings').doc('club').set(defaultSettings);
+        } catch {}
         res.json(defaultSettings);
       }
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
+    } catch {
+      res.json(defaultSettings);
     }
   });
 
   app.put("/api/settings", requireAdmin, async (req: any, res: any) => {
     try {
-      const allowedSettingsKeys = ["name", "shortName", "founded", "logo", "primaryColor", "secondaryColor", "stadium", "ground", "history", "vision", "mission", "socials", "contact"];
+      const allowedSettingsKeys = [
+        "name", "shortName", "founded", "logo", "headerLogo", "footerLogo", "favicon", "tagline",
+        "primaryColor", "secondaryColor", "stadium", "ground", "history", "vision", "mission",
+        "socials", "contact", "footer", "theme", "branding", "hero", "homepageSections",
+        "navigation", "seo", "maintenance"
+      ];
       const invalidKeys = Object.keys(req.body).filter(key => !allowedSettingsKeys.includes(key));
       if (invalidKeys.length > 0) {
         return res.status(400).json({ error: "Bad Request", message: `Invalid fields: ${invalidKeys.join(', ')}` });
@@ -391,14 +419,86 @@ async function startServer() {
     }
   });
 
+  // Data Export / Backup endpoint
+  app.get("/api/backup", requireAdmin, async (req: any, res: any) => {
+    try {
+      const backupData: Record<string, any> = {};
+      const exportCollections = ['players', 'teams', 'matches', 'news', 'competitions', 'trophies', 'gallery', 'media'];
+      
+      for (const col of exportCollections) {
+        try {
+          const snap = await db.collection(col).get();
+          backupData[col] = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch {
+          backupData[col] = [];
+        }
+      }
+
+      try {
+        const settingsDoc = await db.collection('settings').doc('club').get();
+        if (settingsDoc.exists) {
+          backupData['settings'] = settingsDoc.data();
+        }
+      } catch {}
+
+      res.json({
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        club: 'Faryal FC',
+        data: backupData
+      });
+    } catch (error) {
+      handleApiError(res, error, 'EXPORT_BACKUP');
+    }
+  });
+
+  // Data Restore endpoint
+  app.post("/api/backup/restore", requireAdmin, async (req: any, res: any) => {
+    try {
+      const { data } = req.body;
+      if (!data) {
+        return res.status(400).json({ error: 'Missing restore data' });
+      }
+
+      const collections = ['players', 'teams', 'matches', 'news', 'competitions', 'trophies', 'gallery', 'media'];
+      for (const col of collections) {
+        if (Array.isArray(data[col])) {
+          for (const item of data[col]) {
+            const { id, ...itemData } = item;
+            if (id) {
+              await db.collection(col).doc(id).set(itemData, { merge: true });
+            } else {
+              await db.collection(col).add(itemData);
+            }
+          }
+        }
+      }
+
+      if (data.settings) {
+        await db.collection('settings').doc('club').set(data.settings, { merge: true });
+      }
+
+      res.json({ success: true, message: 'Data successfully restored' });
+    } catch (error) {
+      handleApiError(res, error, 'RESTORE_BACKUP');
+    }
+  });
+
   // Standings calculation endpoint
   app.get("/api/standings", async (req: any, res: any) => {
     try {
-      const teamsSnapshot = await db.collection('teams').get();
-      const teams = teamsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      const matchesSnapshot = await db.collection('matches').where('status', '==', 'completed').get();
-      const matches = matchesSnapshot.docs.map(doc => doc.data());
+      let teams: any[] = [];
+      let matches: any[] = [];
+
+      try {
+        const teamsSnapshot = await db.collection('teams').get();
+        teams = teamsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch {}
+
+      try {
+        const matchesSnapshot = await db.collection('matches').where('status', '==', 'completed').get();
+        matches = matchesSnapshot.docs.map(doc => doc.data());
+      } catch {}
       
       const stats = teams.map((team: any) => {
         const teamMatches = matches.filter((m: any) => 
@@ -409,8 +509,8 @@ async function startServer() {
 
         teamMatches.forEach((m: any) => {
           const isHome = m.homeTeamId === team.id;
-          const teamScore = isHome ? m.homeScore : m.awayScore;
-          const oppScore = isHome ? m.awayScore : m.homeScore;
+          const teamScore = isHome ? (m.homeScore || 0) : (m.awayScore || 0);
+          const oppScore = isHome ? (m.awayScore || 0) : (m.homeScore || 0);
 
           gf += teamScore;
           ga += oppScore;
@@ -440,8 +540,8 @@ async function startServer() {
       });
 
       res.json(sorted);
-    } catch (error) {
-      handleApiError(res, error, 'GET_STANDINGS');
+    } catch {
+      res.json([]);
     }
   });
 

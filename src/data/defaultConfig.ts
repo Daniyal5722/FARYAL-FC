@@ -1,0 +1,218 @@
+import {
+  ThemeConfig,
+  BrandingConfig,
+  HeroConfig,
+  HomepageSection,
+  NavigationItem,
+  SEOConfig,
+  MaintenanceConfig,
+  ClubSettings
+} from '../types';
+
+export const DEFAULT_THEME: ThemeConfig = {
+  mode: 'dark',
+  primaryColor: '#002d62',
+  secondaryColor: '#07111F',
+  accentColor: '#3b82f6',
+  backgroundColor: '#020617',
+  surfaceColor: '#0f172a',
+  textColor: '#f8fafc',
+  mutedTextColor: '#94a3b8',
+  borderColor: '#1e293b',
+  buttonColor: '#2563eb',
+  buttonHoverColor: '#1d4ed8',
+  borderRadius: 'md',
+  stylePreset: 'modern_sports',
+  typography: {
+    headingFont: 'Plus Jakarta Sans',
+    bodyFont: 'Inter',
+    navigationFont: 'Plus Jakarta Sans',
+    fontScale: 'normal',
+    headingWeight: '900',
+    bodyWeight: '500',
+    letterSpacing: '-0.02em',
+  },
+  animations: {
+    enabled: true,
+    intensity: 'medium',
+    pageTransitions: true,
+    hoverAnimations: true,
+    backgroundAnimation: true,
+    motionEffects: true,
+  },
+  background: {
+    type: 'gradient',
+    patternOpacity: 0.15,
+  },
+};
+
+export const THEME_PRESETS: Record<string, Partial<ThemeConfig>> = {
+  modern_sports: {
+    primaryColor: '#002d62',
+    secondaryColor: '#07111F',
+    accentColor: '#3b82f6',
+    backgroundColor: '#020617',
+    surfaceColor: '#0f172a',
+    borderRadius: 'md',
+    stylePreset: 'modern_sports',
+  },
+  professional: {
+    primaryColor: '#0f172a',
+    secondaryColor: '#1e293b',
+    accentColor: '#0284c7',
+    backgroundColor: '#030712',
+    surfaceColor: '#111827',
+    borderRadius: 'sm',
+    stylePreset: 'professional',
+  },
+  minimal: {
+    primaryColor: '#18181b',
+    secondaryColor: '#27272a',
+    accentColor: '#e4e4e7',
+    backgroundColor: '#09090b',
+    surfaceColor: '#18181b',
+    borderRadius: 'sharp',
+    stylePreset: 'minimal',
+  },
+  premium: {
+    primaryColor: '#001a3d',
+    secondaryColor: '#000d20',
+    accentColor: '#60a5fa',
+    backgroundColor: '#010409',
+    surfaceColor: '#0d1117',
+    borderRadius: 'lg',
+    stylePreset: 'premium',
+  },
+  classic: {
+    primaryColor: '#1e3a8a',
+    secondaryColor: '#172554',
+    accentColor: '#38bdf8',
+    backgroundColor: '#0b0f19',
+    surfaceColor: '#151c2e',
+    borderRadius: 'xl',
+    stylePreset: 'classic',
+  },
+};
+
+export const DEFAULT_BRANDING: BrandingConfig = {
+  clubName: 'Faryal FC',
+  shortName: 'FFC',
+  tagline: 'Built For The Game',
+  logo: '/logo.png',
+  headerLogo: '/logo.png',
+  footerLogo: '/logo.png',
+  favicon: '/favicon.ico',
+};
+
+export const DEFAULT_HERO: HeroConfig = {
+  title: 'FARYAL FC',
+  subtitle: 'BUILT FOR THE GAME',
+  description: 'Developing elite football talent with tactical discipline, uncompromising spirit, and professional standards in Karachi, Pakistan.',
+  backgroundImage: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1920&auto=format&fit=crop',
+  ctaText: 'VIEW SQUAD',
+  ctaLink: '/team',
+  secondaryCtaText: 'LATEST FIXTURES',
+  secondaryCtaLink: '/matches',
+  visible: true,
+  showAnimation: true,
+};
+
+export const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
+  { id: 'hero', name: 'Hero Section', visible: true, order: 1 },
+  { id: 'featured_match', name: 'Match Center & Next Game', visible: true, order: 2 },
+  { id: 'squad', name: 'Player Spotlight', visible: true, order: 3 },
+  { id: 'standings', name: 'League Standings', visible: true, order: 4 },
+  { id: 'results', name: 'Latest Match Results', visible: true, order: 5 },
+  { id: 'news', name: 'Club News & Updates', visible: true, order: 6 },
+  { id: 'ground', name: 'Home Ground Location', visible: true, order: 7 },
+  { id: 'story', name: 'Our History & Mission', visible: true, order: 8 },
+  { id: 'gallery', name: 'Club Gallery', visible: true, order: 9 },
+];
+
+export const DEFAULT_NAVIGATION: NavigationItem[] = [
+  { id: 'home', label: 'Home', url: '/', visible: true, order: 1 },
+  { id: 'team', label: 'Squad', url: '/team', visible: true, order: 2 },
+  { id: 'matches', label: 'Matches', url: '/matches', visible: true, order: 3 },
+  { id: 'standings', label: 'Standings', url: '/standings', visible: true, order: 4 },
+  { id: 'formation', label: 'Formation', url: '/formation', visible: true, order: 5 },
+  { id: 'goals', label: 'Goals', url: '/goals', visible: true, order: 6 },
+  { id: 'ground', label: 'Ground', url: '/ground', visible: true, order: 7 },
+  { id: 'news', label: 'News', url: '/news', visible: true, order: 8 },
+  { id: 'gallery', label: 'Gallery', url: '/gallery', visible: true, order: 9 },
+  { id: 'about', label: 'About', url: '/about', visible: true, order: 10 },
+  { id: 'contact', label: 'Contact', url: '/contact', visible: true, order: 11 },
+];
+
+export const DEFAULT_SEO: SEOConfig = {
+  siteTitle: 'Faryal FC — Official Football Club Website & Portal',
+  metaDescription: 'Official website of Faryal FC, Karachi, Pakistan. Explore squad roster, upcoming fixtures, match results, league standings, player stats, and club news.',
+  keywords: 'Faryal FC, Football Club, Karachi Football, Pakistan Football, Soccer Academy, Faryal Ground',
+  ogTitle: 'Faryal FC — Official Football Club Website',
+  ogDescription: 'Official website of Faryal FC, Karachi, Pakistan. Match scores, player squad, and club announcements.',
+  ogImage: '/logo.png',
+  canonicalUrl: 'https://faryal-fc.vercel.app',
+  robots: 'index, follow',
+};
+
+export const DEFAULT_MAINTENANCE: MaintenanceConfig = {
+  enabled: false,
+  message: 'Faryal FC official portal is currently undergoing scheduled maintenance. We will be back online shortly.',
+  expectedBackTime: 'Soon',
+  allowAdminBypass: true,
+};
+
+export const DEFAULT_FULL_SETTINGS: ClubSettings = {
+  name: 'Faryal FC',
+  shortName: 'FFC',
+  founded: '2024',
+  logo: '/logo.png',
+  headerLogo: '/logo.png',
+  footerLogo: '/logo.png',
+  favicon: '/favicon.ico',
+  tagline: 'Built For The Game',
+  primaryColor: '#002d62',
+  secondaryColor: '#07111F',
+  stadium: 'Faryal Ground',
+  ground: {
+    name: 'Faryal FC Ground',
+    address: '20-A Main Rd, Model Colony Block 24 Model Colony, Karachi, 75080, Pakistan',
+    latitude: 24.903822,
+    longitude: 67.194202,
+    mapsUrl: 'https://share.google/WntzBRDQxKW4EUPPI',
+    description: 'The home fortress of Faryal FC located in Model Colony, Karachi.',
+    facilities: ['Floodlights', 'Dressing Rooms', 'Warm-up Zone', 'Medical Bay', 'Parking'],
+    capacity: '1,500',
+    surface: 'Natural Grass Turf',
+  },
+  history: 'Faryal FC was established in 2024 with a vision to build a world-class footballing community. Starting from local roots in Karachi, the club has quickly grown into a competitive force, emphasizing youth development, tactical excellence, and a spirit that never says die.',
+  vision: 'To become the premier destination for footballing talent in the region and inspire the next generation of athletes.',
+  mission: 'To develop technically gifted players who play with passion, tactical discipline, and unrelenting integrity.',
+  socials: {
+    instagram: 'https://instagram.com/faryalfc',
+    facebook: 'https://facebook.com/faryalfc',
+    whatsapp: 'https://wa.me/923000000000',
+    youtube: 'https://youtube.com/@faryalfc',
+    tiktok: 'https://tiktok.com/@faryalfc',
+    twitter: 'https://twitter.com/faryalfc',
+  },
+  contact: {
+    email: 'info@faryalfc.com',
+    phone: '+92 300 000 0000',
+    address: '20-A Main Rd, Model Colony, Karachi, Pakistan',
+    description: 'Get in touch with Faryal FC management for trials, fixtures, sponsorships, or media inquiries.',
+  },
+  footer: {
+    description: 'Official digital platform of Faryal FC. Built for the community, driven by passion.',
+    copyrightText: '© 2024-2026 Faryal FC. All rights reserved.',
+    showSocials: true,
+    showContact: true,
+    showNav: true,
+  },
+  theme: DEFAULT_THEME,
+  branding: DEFAULT_BRANDING,
+  hero: DEFAULT_HERO,
+  homepageSections: DEFAULT_HOMEPAGE_SECTIONS,
+  navigation: DEFAULT_NAVIGATION,
+  seo: DEFAULT_SEO,
+  maintenance: DEFAULT_MAINTENANCE,
+};

@@ -93,7 +93,7 @@ export const ClubSettings: React.FC = () => {
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Club Full Name</label>
                 <input
                   type="text"
-                  value={settings.name}
+                  value={settings.name || ''}
                   onChange={e => setSettings({ ...settings, name: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                 />
@@ -102,7 +102,7 @@ export const ClubSettings: React.FC = () => {
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Short Name / Initials</label>
                 <input
                   type="text"
-                  value={settings.shortName}
+                  value={settings.shortName || ''}
                   onChange={e => setSettings({ ...settings, shortName: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                 />
@@ -111,7 +111,7 @@ export const ClubSettings: React.FC = () => {
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Founded Year</label>
                 <input
                   type="text"
-                  value={settings.founded}
+                  value={settings.founded || ''}
                   onChange={e => setSettings({ ...settings, founded: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                 />
@@ -120,7 +120,7 @@ export const ClubSettings: React.FC = () => {
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Club Logo URL</label>
                 <input
                   type="text"
-                  value={settings.logo}
+                  value={settings.logo || ''}
                   onChange={e => setSettings({ ...settings, logo: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                 />
@@ -129,7 +129,7 @@ export const ClubSettings: React.FC = () => {
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Stadium / Ground Name</label>
                 <input
                   type="text"
-                  value={settings.stadium}
+                  value={settings.stadium || ''}
                   onChange={e => setSettings({ ...settings, stadium: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                 />
@@ -142,8 +142,8 @@ export const ClubSettings: React.FC = () => {
                     <input
                       type="number"
                       step="any"
-                      value={settings.ground.latitude}
-                      onChange={e => setSettings({ ...settings, ground: { ...settings.ground, latitude: parseFloat(e.target.value) } })}
+                      value={settings.ground?.latitude ?? 0}
+                      onChange={e => setSettings({ ...settings, ground: { ...settings.ground, latitude: parseFloat(e.target.value) || 0 } })}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                     />
                   </div>
@@ -152,8 +152,8 @@ export const ClubSettings: React.FC = () => {
                     <input
                       type="number"
                       step="any"
-                      value={settings.ground.longitude}
-                      onChange={e => setSettings({ ...settings, ground: { ...settings.ground, longitude: parseFloat(e.target.value) } })}
+                      value={settings.ground?.longitude ?? 0}
+                      onChange={e => setSettings({ ...settings, ground: { ...settings.ground, longitude: parseFloat(e.target.value) || 0 } })}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                     />
                   </div>
@@ -161,7 +161,7 @@ export const ClubSettings: React.FC = () => {
                     <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Google Maps Share URL</label>
                     <input
                       type="text"
-                      value={settings.ground.mapsUrl}
+                      value={settings.ground?.mapsUrl || ''}
                       onChange={e => setSettings({ ...settings, ground: { ...settings.ground, mapsUrl: e.target.value } })}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                     />
@@ -180,7 +180,7 @@ export const ClubSettings: React.FC = () => {
               <div>
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Club History</label>
                 <textarea
-                  value={settings.history}
+                  value={settings.history || ''}
                   onChange={e => setSettings({ ...settings, history: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium min-h-[150px]"
                 />
@@ -189,7 +189,7 @@ export const ClubSettings: React.FC = () => {
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Our Vision</label>
                   <textarea
-                    value={settings.vision}
+                    value={settings.vision || ''}
                     onChange={e => setSettings({ ...settings, vision: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium min-h-[100px]"
                   />
@@ -197,7 +197,7 @@ export const ClubSettings: React.FC = () => {
                 <div>
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Our Mission</label>
                   <textarea
-                    value={settings.mission}
+                    value={settings.mission || ''}
                     onChange={e => setSettings({ ...settings, mission: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium min-h-[100px]"
                   />
@@ -216,7 +216,7 @@ export const ClubSettings: React.FC = () => {
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Official Email</label>
                 <input
                   type="email"
-                  value={settings.contact.email}
+                  value={settings.contact?.email || ''}
                   onChange={e => setSettings({ ...settings, contact: { ...settings.contact, email: e.target.value } })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                 />
@@ -225,7 +225,7 @@ export const ClubSettings: React.FC = () => {
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Phone Number</label>
                 <input
                   type="text"
-                  value={settings.contact.phone}
+                  value={settings.contact?.phone || ''}
                   onChange={e => setSettings({ ...settings, contact: { ...settings.contact, phone: e.target.value } })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                 />
@@ -234,7 +234,7 @@ export const ClubSettings: React.FC = () => {
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Club Address</label>
                 <input
                   type="text"
-                  value={settings.contact.address}
+                  value={settings.contact?.address || ''}
                   onChange={e => setSettings({ ...settings, contact: { ...settings.contact, address: e.target.value } })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all font-medium"
                 />
