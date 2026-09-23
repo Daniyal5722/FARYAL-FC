@@ -21,7 +21,7 @@ export const Ground: React.FC = () => {
     );
   }
 
-  const mapUrl = `https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&q=${settings.ground.latitude},${settings.ground.longitude}&zoom=16`;
+  const mapUrl = `https://maps.google.com/maps?q=${settings.ground.latitude},${settings.ground.longitude}&z=16&output=embed`;
 
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">

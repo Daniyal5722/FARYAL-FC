@@ -24,23 +24,23 @@ export interface Team {
 export interface Player {
   id: string;
   name: string;
-  number: number;
-  position: string;
-  image: string;
-  nationality: string;
-  birthDate: string;
+  number?: number | null;
+  position?: string;
+  image?: string;
+  nationality?: string;
+  birthDate?: string;
   height?: string;
   weight?: string;
-  bio: string;
-  stats: {
-    appearances: number;
-    goals: number;
-    assists: number;
-    cleanSheets: number;
+  bio?: string;
+  stats?: {
+    appearances?: number;
+    goals?: number;
+    assists?: number;
+    cleanSheets?: number;
     yellowCards?: number;
     redCards?: number;
   };
-  status: 'active' | 'injured' | 'suspended' | 'inactive';
+  status?: 'active' | 'injured' | 'suspended' | 'inactive';
 }
 
 export interface MatchEvent {

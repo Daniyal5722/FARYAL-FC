@@ -144,6 +144,10 @@ export const api = {
         });
       } catch (error) {
         handleFirestoreError(error, OperationType.LIST, 'players');
+        try {
+          const res = await fetch('/api/players');
+          if (res.ok) return await res.json();
+        } catch {}
         return [];
       }
     },
@@ -193,6 +197,10 @@ export const api = {
         };
       } catch (error) {
         handleFirestoreError(error, OperationType.GET, `players/${id}`);
+        try {
+          const res = await fetch(`/api/players/${id}`);
+          if (res.ok) return await res.json();
+        } catch {}
         throw error;
       }
     },

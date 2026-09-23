@@ -361,79 +361,7 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Footer Info */}
-      <section className="py-32 px-6 bg-slate-900 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
-            <div className="lg:col-span-2">
-              <Link to="/" className="flex items-center gap-3 mb-8 group">
-                <img src={settings.logo} alt={settings.name} className="w-16 h-16 object-contain" />
-                <span className="text-4xl font-black tracking-tighter text-white uppercase italic leading-none">
-                  FARYAL <span className="text-slate-700">FC</span>
-                </span>
-              </Link>
-              <p className="text-slate-400 font-medium leading-relaxed mb-10 max-w-md">
-                {settings.history}
-              </p>
-              <div className="flex gap-4">
-                {[Instagram, Facebook, Twitter].map((Icon, i) => (
-                  <a key={i} href="#" className="w-12 h-12 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-500 hover:text-white hover:border-blue-500 transition-all">
-                    <Icon size={20} />
-                  </a>
-                ))}
-              </div>
-            </div>
 
-            <div>
-              <h4 className="text-white font-black uppercase italic tracking-tighter mb-8 text-xl">Information</h4>
-              <nav className="flex flex-col gap-4">
-                {['About Us', 'Matches', 'Squad', 'Standings', 'Gallery', 'Contact'].map(item => (
-                  <Link key={item} to={`/${item.toLowerCase().replace(' ', '')}`} className="text-slate-500 font-bold uppercase tracking-widest text-xs hover:text-blue-500 transition-colors">
-                    {item}
-                  </Link>
-                ))}
-              </nav>
-            </div>
-
-            <div>
-              <h4 className="text-white font-black uppercase italic tracking-tighter mb-8 text-xl">Find Us</h4>
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <MapPin className="text-blue-500 shrink-0" size={18} />
-                  <div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Official Ground</p>
-                    <p className="text-sm font-bold text-white uppercase italic tracking-tighter leading-tight">{settings.ground.address}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <Mail className="text-blue-500 shrink-0" size={18} />
-                  <div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Email Support</p>
-                    <p className="text-sm font-bold text-white uppercase italic tracking-tighter leading-tight">{settings.contact.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <Phone className="text-blue-500 shrink-0" size={18} />
-                  <div>
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Hotline</p>
-                    <p className="text-sm font-bold text-white uppercase italic tracking-tighter leading-tight">{settings.contact.phone}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-32 pt-10 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
-            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
-              © {new Date().getFullYear()} FARYAL FOOTBALL CLUB — ALL RIGHTS RESERVED
-            </p>
-            <div className="flex gap-8">
-              <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] cursor-pointer hover:text-white transition-colors">PRIVACY POLICY</span>
-              <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] cursor-pointer hover:text-white transition-colors">TERMS OF SERVICE</span>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 };

@@ -14,6 +14,8 @@ import { Login } from './pages/Login';
 import { Standings } from './pages/Standings';
 import { PlayerProfile } from './pages/PlayerProfile';
 import { Registration } from './pages/Registration';
+import { NewsPage } from './pages/News';
+import { NewsArticle } from './pages/NewsArticle';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { ManageTeams } from './pages/admin/ManageTeams';
 import { ManagePlayers } from './pages/admin/ManagePlayers';
@@ -40,6 +42,8 @@ export default function App() {
           <Route path="ground" element={<Ground />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
+          <Route path="news" element={<NewsPage />} />
+          <Route path="news/:id" element={<NewsArticle />} />
           <Route path="login" element={<Login />} />
           <Route path="registration" element={<Registration />} />
           

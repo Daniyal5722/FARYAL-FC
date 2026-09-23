@@ -115,7 +115,51 @@ function handleApiError(res: any, error: any, context: string) {
 
 async function startServer() {
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: '25mb' }));
+
+  // Health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
+  // Image Upload Endpoint (e.g. for player photos, logos, match banners)
+  app.post("/api/upload", async (req: any, res: any) => {
+    try {
+      const { image, name } = req.body;
+      if (!image) {
+        return res.status(400).json({ error: "Missing image data" });
+      }
+
+      // Check if data URL
+      const matches = image.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      if (!matches) {
+        return res.status(400).json({ error: "Invalid base64 image format. Expected data:image/...;base64,..." });
+      }
+
+      const rawExt = matches[1].toLowerCase();
+      const ext = rawExt === 'jpeg' ? 'jpg' : rawExt === 'svg+xml' ? 'svg' : rawExt;
+      const buffer = Buffer.from(matches[2], 'base64');
+      const safeName = (name || 'player').replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+      const filename = `${safeName}_${Date.now()}.${ext}`;
+
+      const uploadDir = path.join(process.cwd(), 'public', 'players');
+      await fs.mkdir(uploadDir, { recursive: true });
+      await fs.writeFile(path.join(uploadDir, filename), buffer);
+
+      // Mirror to dist/players if dist directory exists
+      try {
+        const distDir = path.join(process.cwd(), 'dist', 'players');
+        await fs.mkdir(distDir, { recursive: true });
+        await fs.writeFile(path.join(distDir, filename), buffer);
+      } catch {}
+
+      res.json({ url: `/players/${filename}` });
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      res.status(500).json({ error: err.message || "Failed to upload image" });
+    }
+  });
+
   app.use(authenticate);
 
   // Generic CRUD endpoints
@@ -166,7 +210,12 @@ async function startServer() {
 
       res.json(playersWithStats);
     } catch (error) {
-      handleApiError(res, error, 'GET_PLAYERS');
+      try {
+        const fallbackContent = await fs.readFile(path.join(process.cwd(), 'data', 'players.json'), 'utf-8');
+        return res.json(JSON.parse(fallbackContent));
+      } catch {
+        handleApiError(res, error, 'GET_PLAYERS');
+      }
     }
   });
 
@@ -211,6 +260,12 @@ async function startServer() {
         }
       });
     } catch (error) {
+      try {
+        const fallbackContent = await fs.readFile(path.join(process.cwd(), 'data', 'players.json'), 'utf-8');
+        const players = JSON.parse(fallbackContent);
+        const p = players.find((item: any) => item.id === req.params.id);
+        if (p) return res.json(p);
+      } catch {}
       handleApiError(res, error, 'GET_PLAYER_BY_ID');
     }
   });
@@ -389,6 +444,9 @@ async function startServer() {
       handleApiError(res, error, 'GET_STANDINGS');
     }
   });
+
+  // Serve static assets from public folder
+  app.use(express.static(path.join(process.cwd(), "public")));
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

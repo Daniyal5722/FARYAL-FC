@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Player } from '../types';
-import { ArrowLeft, Trophy, Target, Zap, Clock, Shield, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trophy, Target, Shield, User, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
 
 export const PlayerProfile: React.FC = () => {
   const { id } = useParams();
   const [player, setPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -47,13 +48,18 @@ export const PlayerProfile: React.FC = () => {
     );
   }
 
+  const hasJerseyNumber = player.number !== null && player.number !== undefined && Number(player.number) > 0;
+  const hasPhoto = player.image && player.image.trim().length > 0 && !imageError;
+
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen overflow-hidden">
       <div className="max-w-7xl mx-auto relative">
         {/* Background Jersey Number */}
-        <div className="absolute -top-20 -right-20 text-[20rem] font-black text-white/5 italic select-none pointer-events-none">
-          #{player.number}
-        </div>
+        {hasJerseyNumber && (
+          <div className="absolute -top-20 -right-20 text-[20rem] font-black text-white/5 italic select-none pointer-events-none">
+            #{player.number}
+          </div>
+        )}
 
         <Link to="/team" className="inline-flex items-center gap-2 text-slate-500 hover:text-blue-500 transition-colors font-bold uppercase tracking-widest text-xs mb-12 group">
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> BACK TO SQUAD
@@ -63,31 +69,35 @@ export const PlayerProfile: React.FC = () => {
           {/* Image Side */}
           <div className="lg:w-1/3">
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
+              initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               className="relative group"
             >
-              <div className="aspect-[3/4] rounded-3xl overflow-hidden border border-slate-800 shadow-2xl relative">
-                <img
-                  src={player.image}
-                  alt={player.name}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
+              <div className="aspect-[3/4] rounded-3xl overflow-hidden border border-slate-800 shadow-2xl relative bg-slate-900 flex items-center justify-center">
+                {hasPhoto ? (
+                  <img
+                    src={player.image}
+                    alt={player.name}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    referrerPolicy="no-referrer"
+                    onError={() => setImageError(true)}
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 p-8 text-center">
+                    <User size={80} className="text-slate-700 mb-4" />
+                    <p className="text-xs font-black text-slate-500 uppercase tracking-widest">FARYAL FC SQUAD</p>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80" />
                 
                 {/* Position Overlay */}
-                <div className="absolute bottom-8 left-8">
-                  <span className="bg-blue-600 text-white text-xs font-black px-4 py-2 rounded-lg uppercase tracking-[0.2em] shadow-xl">
-                    {player.position}
-                  </span>
-                </div>
-              </div>
-              
-              {/* Floating Stat */}
-              <div className="absolute -bottom-6 -right-6 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
-                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Season Goals</p>
-                <p className="text-4xl font-black text-white italic tracking-tighter">{player.stats?.goals || 0}</p>
+                {player.position && player.position.trim().length > 0 && (
+                  <div className="absolute bottom-8 left-8">
+                    <span className="bg-blue-600 text-white text-xs font-black px-4 py-2 rounded-lg uppercase tracking-[0.2em] shadow-xl">
+                      {player.position}
+                    </span>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
@@ -97,40 +107,62 @@ export const PlayerProfile: React.FC = () => {
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.1 }}
             >
-              <span className="text-blue-500 font-black uppercase tracking-[0.4em] text-sm mb-4 block">Faryal FC Player Profile</span>
-              <h1 className="text-6xl md:text-9xl font-black text-white italic tracking-tighter uppercase leading-none mb-8">
+              <span className="text-blue-500 font-black uppercase tracking-[0.4em] text-sm mb-4 block">Faryal FC Player Roster</span>
+              <h1 className="text-6xl md:text-8xl font-black text-white italic tracking-tighter uppercase leading-none mb-8">
                 {player.name}
               </h1>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-                {[
-                  { label: 'Jersey', value: `#${player.number}`, icon: Shield },
-                  { label: 'Nation', value: player.nationality, icon: Target },
-                  { label: 'Height', value: player.height || '-', icon: Clock },
-                  { label: 'Played', value: player.stats?.appearances || 0, icon: Trophy },
-                ].map((item) => (
-                  <div key={item.label} className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                      <item.icon size={12} className="text-blue-500" /> {item.label}
-                    </p>
-                    <p className="text-xl font-black text-white italic tracking-tighter uppercase">{item.value}</p>
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
+                <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1 flex items-center gap-2">
+                    <Shield size={14} className="text-blue-500" /> Jersey Number
+                  </p>
+                  <p className="text-2xl font-black text-white italic tracking-tighter uppercase">
+                    {hasJerseyNumber ? `#${player.number}` : 'Unassigned'}
+                  </p>
+                </div>
+
+                <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1 flex items-center gap-2">
+                    <Target size={14} className="text-blue-500" /> Nationality
+                  </p>
+                  <p className="text-2xl font-black text-white italic tracking-tighter uppercase">
+                    {player.nationality || 'PAKISTAN'}
+                  </p>
+                </div>
+
+                <div className="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1 flex items-center gap-2">
+                    <Trophy size={14} className="text-blue-500" /> Club
+                  </p>
+                  <p className="text-2xl font-black text-white italic tracking-tighter uppercase">
+                    FARYAL FC
+                  </p>
+                </div>
               </div>
 
-              <div className="mb-12">
-                <h3 className="text-white font-black uppercase tracking-widest text-sm mb-4">Biography</h3>
-                <p className="text-slate-500 text-lg font-medium leading-relaxed">
-                  {player.bio}
-                </p>
-              </div>
+              {/* Bio section if present */}
+              {player.bio && player.bio.trim().length > 0 ? (
+                <div className="mb-12">
+                  <h3 className="text-white font-black uppercase tracking-widest text-sm mb-4">Biography</h3>
+                  <p className="text-slate-400 text-lg font-medium leading-relaxed">
+                    {player.bio}
+                  </p>
+                </div>
+              ) : (
+                <div className="mb-12 p-6 bg-slate-900/50 rounded-2xl border border-slate-800/80">
+                  <p className="text-slate-500 font-medium text-sm italic">
+                    Official Faryal FC squad member representing Model Colony, Karachi.
+                  </p>
+                </div>
+              )}
 
               {/* Detailed Stats */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-3xl shadow-xl shadow-blue-600/20">
-                  <p className="text-xs font-black text-blue-100 uppercase tracking-widest mb-2">Goals</p>
+                <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800">
+                  <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Goals</p>
                   <p className="text-5xl font-black text-white italic tracking-tighter leading-none">{player.stats?.goals || 0}</p>
                 </div>
                 <div className="bg-slate-900 p-8 rounded-3xl border border-slate-800">

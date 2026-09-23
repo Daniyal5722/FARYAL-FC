@@ -1,15 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search as SearchIcon, X, Trophy, User, Calendar } from 'lucide-react';
-import { PLAYERS, MATCHES } from '../data/mockData';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { api } from '../lib/api';
+import { Player, Match } from '../types';
 
 export const GlobalSearch: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
 
-  const filteredPlayers = PLAYERS.filter(p => p.name.toLowerCase().includes(query.toLowerCase()));
-  const filteredMatches = MATCHES.filter(m => 
+  useEffect(() => {
+    if (isOpen) {
+      api.players.getAll().then(setPlayers).catch(() => {});
+      api.matches.getAll().then(setMatches).catch(() => {});
+    }
+  }, [isOpen]);
+
+  const filteredPlayers = players.filter(p => p.name.toLowerCase().includes(query.toLowerCase()));
+  const filteredMatches = matches.filter(m => 
     m.homeTeamName.toLowerCase().includes(query.toLowerCase()) || 
     m.awayTeamName.toLowerCase().includes(query.toLowerCase())
   );

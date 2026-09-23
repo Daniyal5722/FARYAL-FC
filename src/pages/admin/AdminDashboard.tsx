@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { 
   Users, Trophy, Calendar, BarChart3, Settings, Database, 
   ArrowRight, Loader2, Download, Upload, Newspaper, Image as ImageIcon,
-  Medal, LayoutDashboard
+  Medal, LayoutDashboard, Award as AwardIcon
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { Player, Team, Match, News, Competition, Trophy as TrophyType } from '../../types';
@@ -57,7 +57,7 @@ export const AdminDashboard: React.FC = () => {
     { title: 'Competitions', icon: Medal, count: data.competitions.length, link: '/admin/competitions', color: 'bg-purple-600' },
     { title: 'News', icon: Newspaper, count: data.news.length, link: '/admin/news', color: 'bg-pink-600' },
     { title: 'Gallery', icon: ImageIcon, count: 'Manage', link: '/admin/gallery', color: 'bg-cyan-600' },
-    { title: 'Trophies', icon: Award, count: data.trophies.length, link: '/admin/trophies', color: 'bg-amber-600' },
+    { title: 'Trophies', icon: AwardIcon, count: data.trophies.length, link: '/admin/trophies', color: 'bg-amber-600' },
     { title: 'Settings', icon: Settings, count: 'Edit', link: '/admin/settings', color: 'bg-slate-600' },
   ];
 

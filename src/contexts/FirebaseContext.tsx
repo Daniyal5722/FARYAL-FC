@@ -58,12 +58,12 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setUser(currentUser);
       
       if (currentUser) {
-        // Sync user profile to Firestore
-        const userRef = doc(db, 'users', currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        
-        if (!userDoc.exists()) {
-          try {
+        try {
+          // Sync user profile to Firestore
+          const userRef = doc(db, 'users', currentUser.uid);
+          const userDoc = await getDoc(userRef);
+          
+          if (!userDoc.exists()) {
             await setDoc(userRef, {
               uid: currentUser.uid,
               email: currentUser.email,
@@ -73,16 +73,22 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
             });
-          } catch (err) {
-            console.error('Error syncing user profile:', err);
           }
-        }
 
-        // Check if admin
-        // For simplicity, we also check the bootstrapped email
-        const isBootstrappedAdmin = currentUser.email === 'mdaniyalhayyat@gmail.com';
-        const adminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
-        setIsAdmin(isBootstrappedAdmin || adminDoc.exists());
+          // Check if admin
+          const isBootstrappedAdmin = currentUser.email === 'mdaniyalhayyat@gmail.com';
+          let hasAdminDoc = false;
+          try {
+            const adminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
+            hasAdminDoc = adminDoc.exists();
+          } catch {
+            // Ignore error checking admin collection
+          }
+          setIsAdmin(isBootstrappedAdmin || hasAdminDoc);
+        } catch (err) {
+          console.warn('Error during user profile sync:', err);
+          setIsAdmin(currentUser.email === 'mdaniyalhayyat@gmail.com');
+        }
       } else {
         setIsAdmin(false);
       }
@@ -95,7 +101,14 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   return (
     <FirebaseContext.Provider value={{ user, loading, isAdmin }}>
-      {!loading && children}
+      {loading ? (
+        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
+          <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-xs font-semibold tracking-widest text-slate-400 uppercase">Loading Faryal FC...</p>
+        </div>
+      ) : (
+        children
+      )}
     </FirebaseContext.Provider>
   );
 };
