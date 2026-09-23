@@ -1,12 +1,14 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged } from 'firebase/auth';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { User, onAuthStateChanged, onIdTokenChanged } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface FirebaseContextType {
   user: User | null;
+  token: string | null;
   loading: boolean;
   isAdmin: boolean;
+  getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
 }
 
 const FirebaseContext = createContext<FirebaseContextType | undefined>(undefined);
@@ -50,15 +52,31 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 
 export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  const getIdToken = useCallback(async (forceRefresh = false): Promise<string | null> => {
+    if (!auth.currentUser) return null;
+    try {
+      const idToken = await auth.currentUser.getIdToken(forceRefresh);
+      setToken(idToken);
+      return idToken;
+    } catch {
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    // Listen to real-time auth and token state changes
+    const unsubscribe = onIdTokenChanged(auth, async (currentUser) => {
       setUser(currentUser);
       
       if (currentUser) {
         try {
+          const currentToken = await currentUser.getIdToken();
+          setToken(currentToken);
+
           // Sync user profile to Firestore
           const userRef = doc(db, 'users', currentUser.uid);
           const userDoc = await getDoc(userRef);
@@ -90,6 +108,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           setIsAdmin(currentUser.email === 'mdaniyalhayyat@gmail.com');
         }
       } else {
+        setToken(null);
         setIsAdmin(false);
       }
       
@@ -100,7 +119,7 @@ export const FirebaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   return (
-    <FirebaseContext.Provider value={{ user, loading, isAdmin }}>
+    <FirebaseContext.Provider value={{ user, token, loading, isAdmin, getIdToken }}>
       {loading ? (
         <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
           <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />

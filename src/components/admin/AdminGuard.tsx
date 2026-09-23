@@ -1,17 +1,88 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useFirebase } from '../../contexts/FirebaseContext';
-import { Shield, Loader2 } from 'lucide-react';
+import { onIdTokenChanged, User } from 'firebase/auth';
+import { auth, db } from '../../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { Shield, Loader2, Lock } from 'lucide-react';
 
 interface AdminGuardProps {
   children: React.ReactNode;
 }
 
 export const AdminGuard: React.FC<AdminGuardProps> = ({ children }) => {
-  const { user, loading, isAdmin } = useFirebase();
   const location = useLocation();
+  const [authState, setAuthState] = useState<{
+    isLoading: boolean;
+    isAuthenticated: boolean;
+    isAdmin: boolean;
+    user: User | null;
+  }>({
+    isLoading: true,
+    isAuthenticated: false,
+    isAdmin: false,
+    user: null,
+  });
 
-  if (loading) {
+  useEffect(() => {
+    // Real-time Firebase Auth token and session listener
+    const unsubscribe = onIdTokenChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        setAuthState({
+          isLoading: false,
+          isAuthenticated: false,
+          isAdmin: false,
+          user: null,
+        });
+        return;
+      }
+
+      try {
+        // Validate active token
+        const token = await currentUser.getIdToken();
+        if (!token) {
+          setAuthState({
+            isLoading: false,
+            isAuthenticated: false,
+            isAdmin: false,
+            user: null,
+          });
+          return;
+        }
+
+        // Validate administrator permissions
+        const isMasterAdmin = currentUser.email === 'mdaniyalhayyat@gmail.com';
+        let isDocAdmin = false;
+
+        try {
+          const adminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
+          isDocAdmin = adminDoc.exists();
+        } catch {
+          // If firestore rules block admin list query, fallback to master admin check
+        }
+
+        const hasAdminAccess = isMasterAdmin || isDocAdmin;
+
+        setAuthState({
+          isLoading: false,
+          isAuthenticated: true,
+          isAdmin: hasAdminAccess,
+          user: currentUser,
+        });
+      } catch (err) {
+        console.error('Session verification error:', err);
+        setAuthState({
+          isLoading: false,
+          isAuthenticated: !!currentUser,
+          isAdmin: currentUser.email === 'mdaniyalhayyat@gmail.com',
+          user: currentUser,
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  if (authState.isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white p-6">
         <div className="relative mb-6">
@@ -30,7 +101,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children }) => {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!authState.isAuthenticated || !authState.isAdmin) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
