@@ -4,13 +4,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Users, Trophy, Calendar, BarChart3, Settings, Database, 
   ArrowRight, Download, Newspaper, Image as ImageIcon,
-  Palette, Shield, Sparkles, Activity, Clock, Plus, Loader2
+  Palette, Shield, Sparkles, Activity, Clock, Plus, Loader2, Globe
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { Player, Team, Match, News, ActivityLog } from '../../types';
 import { exportToExcel } from '../../lib/excel';
 import { useThemeSettings } from '../../contexts/ThemeSettingsContext';
 import { useFirebase } from '../../contexts/FirebaseContext';
+import { SEO } from '../../components/SEO';
 
 export const AdminDashboard: React.FC = () => {
   const { branding, maintenance } = useThemeSettings();
@@ -91,16 +92,17 @@ export const AdminDashboard: React.FC = () => {
   const totalGoals = players.reduce((acc, p) => acc + (p.stats?.goals || 0), 0);
 
   const quickModules = [
+    { title: 'SEO & Metadata', icon: Globe, count: 'Rank', link: '/admin/seo', color: 'bg-blue-600', desc: 'Google search tags, sitemap & OG cards' },
     { title: 'Players Squad', icon: Users, count: players.length, link: '/admin/players', color: 'bg-emerald-600', desc: 'Squad roster & statistics' },
-    { title: 'Teams & Clubs', icon: Trophy, count: teams.length, link: '/admin/teams', color: 'bg-blue-600', desc: 'Opponent clubs & logos' },
+    { title: 'Teams & Clubs', icon: Trophy, count: teams.length, link: '/admin/teams', color: 'bg-indigo-600', desc: 'Opponent clubs & logos' },
     { title: 'Matches & Fixtures', icon: Calendar, count: matches.length, link: '/admin/matches', color: 'bg-orange-600', desc: 'Scores, lineups & fixtures' },
     { title: 'Theme Customizer', icon: Palette, count: 'Live', link: '/admin/theme', color: 'bg-purple-600', desc: 'Colors, typography & UI' },
     { title: 'News & Updates', icon: Newspaper, count: news.length, link: '/admin/news', color: 'bg-pink-600', desc: 'Club announcements & press' },
-    { title: 'Media Library', icon: ImageIcon, count: 'Assets', link: '/admin/media', color: 'bg-cyan-600', desc: 'Image uploads & crests' },
   ];
 
   return (
     <div className="space-y-8">
+      <SEO title="Admin Control Center | Faryal FC" noIndex={true} />
       {/* Top Banner / Welcome */}
       <div className="bg-gradient-to-r from-blue-900/60 via-slate-900 to-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden shadow-2xl">
         <div className="relative z-10">

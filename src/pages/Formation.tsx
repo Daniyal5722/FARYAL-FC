@@ -1,9 +1,11 @@
 import React from 'react';
 import { FormationPitch } from '../components/FormationPitch';
+import { SEO } from '../components/SEO';
 
 export const Formation: React.FC = () => {
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
+      <SEO pageKey="formation" />
       <div className="max-w-7xl mx-auto text-center">
         <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-xs mb-4 block">Tactical Center</span>
         <h1 className="text-6xl md:text-8xl font-black text-white italic tracking-tighter uppercase leading-none mb-4">

@@ -1,0 +1,21 @@
+# Faryal FC Official Robots.txt
+User-agent: *
+Allow: /
+Allow: /team
+Allow: /players
+Allow: /matches
+Allow: /standings
+Allow: /news
+Allow: /ground
+Allow: /goals
+Allow: /formation
+Allow: /gallery
+Allow: /about
+Allow: /contact
+Allow: /player/
+Allow: /news/
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /login
+
+Sitemap: https://faryal-fc.vercel.app/sitemap.xml

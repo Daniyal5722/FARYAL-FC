@@ -13,6 +13,7 @@ import {
 import { api } from '../lib/api';
 import { useClubSettings } from '../hooks/useClubSettings';
 import { cn, formatDate } from '../lib/utils';
+import { SEO } from '../components/SEO';
 
 export const Home: React.FC = () => {
   const { settings } = useClubSettings();
@@ -64,6 +65,7 @@ export const Home: React.FC = () => {
 
   return (
     <div className="bg-slate-950 overflow-hidden">
+      <SEO pageKey="home" />
       <Hero />
 
       {/* Next Match Ticker/Banner */}

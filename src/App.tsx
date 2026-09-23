@@ -4,6 +4,8 @@ import { FirebaseProvider } from './contexts/FirebaseContext';
 import { ThemeSettingsProvider } from './contexts/ThemeSettingsContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { Layout } from './components/Layout';
+
+// Public Pages
 import { Home } from './pages/Home';
 import { Team } from './pages/Team';
 import { Matches } from './pages/Matches';
@@ -19,7 +21,13 @@ import { PlayerProfile } from './pages/PlayerProfile';
 import { Registration } from './pages/Registration';
 import { NewsPage } from './pages/News';
 import { NewsArticle } from './pages/NewsArticle';
+import { NotFound } from './pages/NotFound';
+
+// Admin Pages & Guards
+import { AdminGuard } from './components/admin/AdminGuard';
+import { AdminLayout } from './components/admin/AdminLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { ManageSEO } from './pages/admin/ManageSEO';
 import { ManageTeams } from './pages/admin/ManageTeams';
 import { ManagePlayers } from './pages/admin/ManagePlayers';
 import { ManageMatches } from './pages/admin/ManageMatches';
@@ -27,8 +35,16 @@ import { ManageCompetitions } from './pages/admin/ManageCompetitions';
 import { ManageNews } from './pages/admin/ManageNews';
 import { ManageGallery } from './pages/admin/ManageGallery';
 import { ManageTrophies } from './pages/admin/ManageTrophies';
+import { ManageBranding } from './pages/admin/ManageBranding';
+import { ManageTheme } from './pages/admin/ManageTheme';
+import { ManageHomepage } from './pages/admin/ManageHomepage';
+import { ManageNavigation } from './pages/admin/ManageNavigation';
+import { ManageMedia } from './pages/admin/ManageMedia';
+import { ManageActivity } from './pages/admin/ManageActivity';
+import { ManageBackup } from './pages/admin/ManageBackup';
+import { ManageLocation } from './pages/admin/ManageLocation';
+import { ManageContact } from './pages/admin/ManageContact';
 import { ClubSettings } from './pages/admin/ClubSettings';
-import { AdminGuard } from './components/admin/AdminGuard';
 
 export default function App() {
   return (
@@ -37,9 +53,11 @@ export default function App() {
         <ToastProvider>
           <Router>
             <Routes>
-              <Route path="/" element={<Layout />}>
+              {/* Public Routes */}
+              <Route element={<Layout />}>
                 <Route index element={<Home />} />
                 <Route path="team" element={<Team />} />
+                <Route path="players" element={<Team />} />
                 <Route path="standings" element={<Standings />} />
                 <Route path="player/:id" element={<PlayerProfile />} />
                 <Route path="matches" element={<Matches />} />
@@ -53,17 +71,37 @@ export default function App() {
                 <Route path="news/:id" element={<NewsArticle />} />
                 <Route path="login" element={<Login />} />
                 <Route path="registration" element={<Registration />} />
-                
-                {/* Protected Admin Routes */}
-                <Route path="admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
-                <Route path="admin/teams" element={<AdminGuard><ManageTeams /></AdminGuard>} />
-                <Route path="admin/players" element={<AdminGuard><ManagePlayers /></AdminGuard>} />
-                <Route path="admin/matches" element={<AdminGuard><ManageMatches /></AdminGuard>} />
-                <Route path="admin/competitions" element={<AdminGuard><ManageCompetitions /></AdminGuard>} />
-                <Route path="admin/news" element={<AdminGuard><ManageNews /></AdminGuard>} />
-                <Route path="admin/gallery" element={<AdminGuard><ManageGallery /></AdminGuard>} />
-                <Route path="admin/trophies" element={<AdminGuard><ManageTrophies /></AdminGuard>} />
-                <Route path="admin/settings" element={<AdminGuard><ClubSettings /></AdminGuard>} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+
+              {/* Protected Admin Console Routes */}
+              <Route
+                path="admin"
+                element={
+                  <AdminGuard>
+                    <AdminLayout />
+                  </AdminGuard>
+                }
+              >
+                <Route index element={<AdminDashboard />} />
+                <Route path="seo" element={<ManageSEO />} />
+                <Route path="teams" element={<ManageTeams />} />
+                <Route path="players" element={<ManagePlayers />} />
+                <Route path="matches" element={<ManageMatches />} />
+                <Route path="competitions" element={<ManageCompetitions />} />
+                <Route path="news" element={<ManageNews />} />
+                <Route path="gallery" element={<ManageGallery />} />
+                <Route path="trophies" element={<ManageTrophies />} />
+                <Route path="branding" element={<ManageBranding />} />
+                <Route path="theme" element={<ManageTheme />} />
+                <Route path="homepage" element={<ManageHomepage />} />
+                <Route path="navigation" element={<ManageNavigation />} />
+                <Route path="media" element={<ManageMedia />} />
+                <Route path="activity" element={<ManageActivity />} />
+                <Route path="backup" element={<ManageBackup />} />
+                <Route path="location" element={<ManageLocation />} />
+                <Route path="contact" element={<ManageContact />} />
+                <Route path="settings" element={<ClubSettings />} />
               </Route>
             </Routes>
           </Router>

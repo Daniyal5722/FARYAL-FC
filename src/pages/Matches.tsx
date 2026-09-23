@@ -5,6 +5,7 @@ import { Match, Team } from '../types';
 import { Calendar, History, Loader2, Search, Filter, X, ChevronDown } from 'lucide-react';
 import { api } from '../lib/api';
 import { cn } from '../lib/utils';
+import { SEO } from '../components/SEO';
 
 export const Matches: React.FC = () => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -68,7 +69,8 @@ export const Matches: React.FC = () => {
 
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
-      <div className="max-w-4xl mx-auto">
+      <SEO pageKey="matches" />
+      <div className="max-w-7xl mx-auto">
         <div className="mb-16">
           <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-xs mb-4 block">Match Center</span>
           <h1 className="text-6xl md:text-8xl font-black text-white italic tracking-tighter uppercase leading-none mb-12">

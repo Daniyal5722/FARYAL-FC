@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useFirebase } from '../contexts/FirebaseContext';
+import { SEO } from '../components/SEO';
 
 export const Login: React.FC = () => {
   const [isRegister, setIsRegister] = useState(false);
@@ -47,6 +48,7 @@ export const Login: React.FC = () => {
     const isAdmin = user.email === 'mdaniyalhayyat@gmail.com';
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6 pt-20">
+        <SEO title="Member Portal Account | Faryal FC" noIndex={true} />
         <div className="w-full max-w-md text-center">
           <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-6 border-2 border-blue-600">
             <img src={user.photoURL || ''} alt={user.displayName || ''} className="w-full h-full object-cover" />

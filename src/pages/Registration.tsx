@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebase, OperationType, handleFirestoreError } from '../contexts/FirebaseContext';
+import { SEO } from '../components/SEO';
 
 export const Registration: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -48,6 +49,10 @@ export const Registration: React.FC = () => {
 
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen flex items-center justify-center">
+      <SEO
+        title="Player Registration & Trials | Faryal FC"
+        description="Register for official Faryal FC tournament entry, football academy trials, and squad training camps."
+      />
       <div className="max-w-xl w-full">
         <AnimatePresence mode="wait">
           {step === 1 && (

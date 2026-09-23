@@ -4,6 +4,7 @@ import { PlayerCard } from '../components/PlayerCard';
 import { Player } from '../types';
 import { Users, Filter, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
+import { SEO } from '../components/SEO';
 
 export const Team: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -45,6 +46,7 @@ export const Team: React.FC = () => {
 
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
+      <SEO pageKey="team" />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16">

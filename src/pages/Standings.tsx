@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { api } from '../lib/api';
 import { Team } from '../types';
 import { Loader2, Trophy, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { SEO } from '../components/SEO';
 
 export const Standings: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -33,6 +34,7 @@ export const Standings: React.FC = () => {
 
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
+      <SEO pageKey="standings" />
       <div className="max-w-7xl mx-auto">
         <div className="mb-16 text-center md:text-left">
           <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-xs mb-4 block">Elite League 2026</span>

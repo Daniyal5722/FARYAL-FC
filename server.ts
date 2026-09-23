@@ -124,6 +124,120 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  // Dynamic robots.txt
+  app.get("/robots.txt", (req, res) => {
+    const robotsContent = `# Faryal FC Official Robots.txt
+User-agent: *
+Allow: /
+Allow: /team
+Allow: /players
+Allow: /matches
+Allow: /standings
+Allow: /news
+Allow: /ground
+Allow: /goals
+Allow: /formation
+Allow: /gallery
+Allow: /about
+Allow: /contact
+Allow: /player/
+Allow: /news/
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /login
+
+Sitemap: https://faryal-fc.vercel.app/sitemap.xml
+`;
+    res.setHeader("Content-Type", "text/plain");
+    res.send(robotsContent);
+  });
+
+  // Dynamic XML Sitemap
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      const baseUrl = "https://faryal-fc.vercel.app";
+      const now = new Date().toISOString().split("T")[0];
+
+      // Static core public pages
+      const corePages: { loc: string; changefreq: string; priority: string; lastmod?: string }[] = [
+        { loc: `${baseUrl}/`, changefreq: "daily", priority: "1.0", lastmod: now },
+        { loc: `${baseUrl}/team`, changefreq: "weekly", priority: "0.9", lastmod: now },
+        { loc: `${baseUrl}/matches`, changefreq: "weekly", priority: "0.9", lastmod: now },
+        { loc: `${baseUrl}/standings`, changefreq: "weekly", priority: "0.9", lastmod: now },
+        { loc: `${baseUrl}/news`, changefreq: "daily", priority: "0.8", lastmod: now },
+        { loc: `${baseUrl}/ground`, changefreq: "monthly", priority: "0.8", lastmod: now },
+        { loc: `${baseUrl}/formation`, changefreq: "monthly", priority: "0.7", lastmod: now },
+        { loc: `${baseUrl}/goals`, changefreq: "weekly", priority: "0.7", lastmod: now },
+        { loc: `${baseUrl}/gallery`, changefreq: "weekly", priority: "0.7", lastmod: now },
+        { loc: `${baseUrl}/about`, changefreq: "monthly", priority: "0.7", lastmod: now },
+        { loc: `${baseUrl}/contact`, changefreq: "monthly", priority: "0.7", lastmod: now },
+      ];
+
+      // Fetch dynamic players & news articles
+      const dynamicPages: { loc: string; changefreq: string; priority: string; lastmod?: string }[] = [];
+
+      try {
+        if (db) {
+          const [playersSnap, newsSnap] = await Promise.all([
+            db.collection("players").get(),
+            db.collection("news").get()
+          ]);
+
+          playersSnap.forEach((doc: any) => {
+            const data = doc.data();
+            if (data.status !== "inactive") {
+              dynamicPages.push({
+                loc: `${baseUrl}/player/${doc.id}`,
+                changefreq: "weekly",
+                priority: "0.8",
+                lastmod: now,
+              });
+            }
+          });
+
+          newsSnap.forEach((doc: any) => {
+            const data = doc.data();
+            if (data.status !== "draft") {
+              dynamicPages.push({
+                loc: `${baseUrl}/news/${doc.id}`,
+                changefreq: "monthly",
+                priority: "0.7",
+                lastmod: data.date ? new Date(data.date).toISOString().split("T")[0] : now,
+              });
+            }
+          });
+        }
+      } catch (dbErr) {
+        console.warn("Could not query dynamic sitemap items from Firestore:", dbErr);
+      }
+
+      const allPages = [...corePages, ...dynamicPages];
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+${allPages
+  .map(
+    (page) => `  <url>
+    <loc>${page.loc}</loc>
+    <lastmod>${page.lastmod || now}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>`
+  )
+  .join("\n")}
+</urlset>`;
+
+      res.setHeader("Content-Type", "application/xml; charset=utf-8");
+      res.send(xml);
+    } catch (err: any) {
+      console.error("Sitemap generation error:", err);
+      res.status(500).send("Error generating sitemap");
+    }
+  });
+
   // Image Upload Endpoint (e.g. for player photos, logos, match banners)
   app.post("/api/upload", async (req: any, res: any) => {
     try {

@@ -5,6 +5,7 @@ import { ArrowLeft, Calendar, User, Tag, Loader2, Share2 } from 'lucide-react';
 import { api } from '../lib/api';
 import { News } from '../types';
 import { formatDate } from '../lib/utils';
+import { SEO } from '../components/SEO';
 
 export const NewsArticle: React.FC = () => {
   const { id } = useParams();
@@ -38,6 +39,7 @@ export const NewsArticle: React.FC = () => {
   if (!article) {
     return (
       <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen text-center">
+        <SEO title="Article Not Found | Faryal FC News" noIndex={true} />
         <h1 className="text-white text-4xl font-black italic tracking-tighter uppercase mb-4">ARTICLE NOT FOUND</h1>
         <Link to="/news" className="text-blue-500 font-bold uppercase tracking-widest text-xs hover:underline">
           BACK TO NEWS
@@ -46,8 +48,37 @@ export const NewsArticle: React.FC = () => {
     );
   }
 
+  const newsArticleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: article.title,
+    image: [article.image],
+    datePublished: article.date,
+    dateModified: article.date,
+    author: [{
+      '@type': 'Person',
+      name: article.author || 'Faryal FC Media',
+    }],
+    publisher: {
+      '@type': 'Organization',
+      name: 'Faryal FC',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://faryal-fc.vercel.app/logo.png',
+      },
+    },
+    description: article.summary || article.content?.slice(0, 160),
+  };
+
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
+      <SEO
+        title={`${article.title} | Faryal FC News`}
+        description={article.summary || article.content?.slice(0, 155)}
+        ogImage={article.image}
+        ogType="article"
+        structuredData={newsArticleSchema}
+      />
       <div className="max-w-4xl mx-auto">
         <Link to="/news" className="inline-flex items-center gap-2 text-slate-500 hover:text-blue-500 transition-colors font-bold uppercase tracking-widest text-xs mb-12 group">
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> BACK TO NEWS

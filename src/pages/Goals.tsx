@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Player } from '../types';
 import { Trophy, Target, Zap, Award, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
+import { SEO } from '../components/SEO';
 
 export const Goals: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -36,6 +37,7 @@ export const Goals: React.FC = () => {
 
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
+      <SEO pageKey="goals" />
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20">
           <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-xs mb-4 block">Season Stats</span>

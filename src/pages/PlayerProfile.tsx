@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Player } from '../types';
 import { ArrowLeft, Trophy, Target, Zap, Clock, Shield, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
+import { SEO } from '../components/SEO';
 
 export const PlayerProfile: React.FC = () => {
   const { id } = useParams();
@@ -39,6 +40,7 @@ export const PlayerProfile: React.FC = () => {
   if (!player) {
     return (
       <div className="pt-32 text-center bg-slate-950 min-h-screen">
+        <SEO title="Player Not Found | Faryal FC Squad" noIndex={true} />
         <h1 className="text-white text-4xl font-black italic tracking-tighter uppercase mb-4">PLAYER NOT FOUND</h1>
         <Link to="/team" className="text-blue-500 font-bold uppercase tracking-widest text-xs hover:underline">
           BACK TO SQUAD
@@ -47,8 +49,28 @@ export const PlayerProfile: React.FC = () => {
     );
   }
 
+  const playerSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: player.name,
+    jobTitle: `Football Player (${player.position})`,
+    image: player.image,
+    nationality: player.nationality || 'Pakistani',
+    description: player.bio || `${player.name} plays as a ${player.position} for Faryal FC.`,
+    memberOf: {
+      '@type': 'SportsTeam',
+      name: 'Faryal FC',
+    },
+  };
+
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen overflow-hidden">
+      <SEO
+        title={`${player.name} ${player.number ? `#${player.number}` : ''} | Faryal FC Player Profile`}
+        description={`${player.name} (${player.position}) - Official Faryal FC squad member. ${player.stats?.goals || 0} Goals, ${player.stats?.appearances || 0} Appearances. ${player.bio || ''}`}
+        ogImage={player.image}
+        structuredData={playerSchema}
+      />
       <div className="max-w-7xl mx-auto relative">
         {/* Background Jersey Number */}
         <div className="absolute -top-20 -right-20 text-[20rem] font-black text-white/5 italic select-none pointer-events-none">

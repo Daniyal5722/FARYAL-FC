@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Send, MessageCircle, Loader2, Trophy, CheckCircle2 } from 'lucide-react';
 import { useClubSettings } from '../hooks/useClubSettings';
+import { SEO } from '../components/SEO';
 
 export const Contact: React.FC = () => {
   const { settings, loading } = useClubSettings();
@@ -23,6 +24,7 @@ export const Contact: React.FC = () => {
 
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
+      <SEO pageKey="contact" />
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row gap-16">
           {/* Info Side */}

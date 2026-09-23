@@ -144,14 +144,79 @@ export const DEFAULT_NAVIGATION: NavigationItem[] = [
 ];
 
 export const DEFAULT_SEO: SEOConfig = {
-  siteTitle: 'Faryal FC — Official Football Club Website & Portal',
-  metaDescription: 'Official website of Faryal FC, Karachi, Pakistan. Explore squad roster, upcoming fixtures, match results, league standings, player stats, and club news.',
-  keywords: 'Faryal FC, Football Club, Karachi Football, Pakistan Football, Soccer Academy, Faryal Ground',
-  ogTitle: 'Faryal FC — Official Football Club Website',
-  ogDescription: 'Official website of Faryal FC, Karachi, Pakistan. Match scores, player squad, and club announcements.',
-  ogImage: '/logo.png',
+  siteTitle: 'Faryal FC | Official Football Club Website',
+  metaDescription: 'Faryal FC is a football club featuring team players, matches, fixtures, results, standings, news, and official club information.',
+  keywords: 'Faryal FC, football club, Karachi football, Pakistan football, football squad, league standings, Faryal FC Ground, Model Colony football',
+  ogTitle: 'Faryal FC | Official Football Club Website',
+  ogDescription: 'Faryal FC is a football club featuring team players, matches, fixtures, results, standings, news, and official club information.',
+  ogImage: '/faryal_crest.png',
   canonicalUrl: 'https://faryal-fc.vercel.app',
   robots: 'index, follow',
+  robotsIndex: true,
+  robotsFollow: true,
+  twitterTitle: 'Faryal FC | Official Football Club Website',
+  twitterDescription: 'Faryal FC is a football club featuring team players, matches, fixtures, results, standings, news, and official club information.',
+  twitterImage: '/faryal_crest.png',
+  twitterHandle: '@faryalfc',
+  siteName: 'Faryal FC',
+  locale: 'en_PK',
+  pages: {
+    home: {
+      title: 'Faryal FC | Official Football Club Website',
+      description: 'Faryal FC is a football club featuring team players, matches, fixtures, results, standings, news, and official club information.',
+      canonicalUrl: 'https://faryal-fc.vercel.app/'
+    },
+    team: {
+      title: 'Faryal FC Players | Official Squad',
+      description: 'Meet the official Faryal FC squad roster. Explore player positions, captain info, bios, appearances, goals, and season statistics.',
+      canonicalUrl: 'https://faryal-fc.vercel.app/team'
+    },
+    matches: {
+      title: 'Faryal FC Matches | Fixtures & Results',
+      description: 'View Faryal FC match fixtures, upcoming schedules, real-time match events, and latest competitive results.',
+      canonicalUrl: 'https://faryal-fc.vercel.app/matches'
+    },
+    standings: {
+      title: 'Faryal FC Standings | League Table',
+      description: 'Check the official league table standings, points, goal differences, and head-to-head records for Faryal FC.',
+      canonicalUrl: 'https://faryal-fc.vercel.app/standings'
+    },
+    news: {
+      title: 'Faryal FC News | Latest Club Updates',
+      description: 'Get the latest Faryal FC club announcements, match reports, squad news, and press releases.',
+      canonicalUrl: 'https://faryal-fc.vercel.app/news'
+    },
+    ground: {
+      title: 'Faryal FC Ground | Official Home Stadium & Facility',
+      description: 'Official stadium details, directions, facilities, and pitch information for Faryal FC Ground in Model Colony, Karachi.',
+      canonicalUrl: 'https://faryal-fc.vercel.app/ground'
+    },
+    formation: {
+      title: 'Faryal FC Tactics | Squad Formation & Pitch Lineup',
+      description: 'Explore starting lineups, tactical formation strategies, and pitch positioning for Faryal FC.',
+      canonicalUrl: 'https://faryal-fc.vercel.app/formation'
+    },
+    goals: {
+      title: 'Faryal FC Goals | Season Highlights & Top Scorers',
+      description: 'Track season goals, assists, top scorers, and match milestone highlights for Faryal FC.',
+      canonicalUrl: 'https://faryal-fc.vercel.app/goals'
+    },
+    gallery: {
+      title: 'Faryal FC Gallery | Official Match & Training Photos',
+      description: 'High-resolution photo gallery showcasing Faryal FC match action, squad training, and club events.',
+      canonicalUrl: 'https://faryal-fc.vercel.app/gallery'
+    },
+    about: {
+      title: 'About Faryal FC | History, Vision & Mission',
+      description: 'Discover the story, founding vision, and mission of Faryal Football Club based in Karachi, Pakistan.',
+      canonicalUrl: 'https://faryal-fc.vercel.app/about'
+    },
+    contact: {
+      title: 'Contact Faryal FC | Trials, Fixtures & Inquiries',
+      description: 'Contact Faryal FC management for academy trials, friendly matches, media inquiries, and club collaborations.',
+      canonicalUrl: 'https://faryal-fc.vercel.app/contact'
+    }
+  }
 };
 
 export const DEFAULT_MAINTENANCE: MaintenanceConfig = {

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Image as ImageIcon, Camera, Loader2 } from 'lucide-react';
 import { api } from '../lib/api';
 import { GalleryItem } from '../types';
+import { SEO } from '../components/SEO';
 
 const CATEGORIES = ['ALL', 'MATCHES', 'TRAINING', 'TEAM', 'STADIUM', 'CELEBRATIONS'];
 
@@ -92,6 +93,7 @@ export const Gallery: React.FC = () => {
 
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
+      <SEO pageKey="gallery" />
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16">
           <div className="text-center md:text-left">

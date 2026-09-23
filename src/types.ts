@@ -197,6 +197,17 @@ export interface NavigationItem {
   isExternal?: boolean;
 }
 
+export interface PageSEOConfig {
+  title?: string;
+  description?: string;
+  keywords?: string;
+  canonicalUrl?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  noIndex?: boolean;
+}
+
 export interface SEOConfig {
   siteTitle: string;
   metaDescription: string;
@@ -206,9 +217,17 @@ export interface SEOConfig {
   ogImage: string;
   canonicalUrl: string;
   robots: string;
+  robotsIndex?: boolean;
+  robotsFollow?: boolean;
+  twitterTitle?: string;
+  twitterDescription?: string;
+  twitterImage?: string;
+  twitterHandle?: string;
+  siteName?: string;
+  locale?: string;
+  pages?: Record<string, PageSEOConfig>;
   title?: string;
   description?: string;
-  twitterHandle?: string;
 }
 
 export interface MaintenanceConfig {

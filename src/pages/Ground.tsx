@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { GROUND } from '../data/mockData';
 import { MapPin, Users, Zap, Wind, Navigation, ExternalLink, Loader2 } from 'lucide-react';
 import { useClubSettings } from '../hooks/useClubSettings';
+import { SEO } from '../components/SEO';
 
 export const Ground: React.FC = () => {
   const { settings, loading } = useClubSettings();
@@ -23,8 +24,31 @@ export const Ground: React.FC = () => {
 
   const mapUrl = `https://maps.google.com/maps?q=${settings.ground.latitude},${settings.ground.longitude}&z=16&output=embed`;
 
+  const stadiumSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'CivicStructure',
+    name: settings.ground.name || 'Faryal FC Ground',
+    description: settings.ground.description || GROUND.description,
+    image: (settings.ground as any).image || settings.ground.images?.[0] || 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=1200&auto=format&fit=crop',
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: settings.ground.address,
+      addressLocality: 'Karachi',
+      addressRegion: 'Sindh',
+      postalCode: '75080',
+      addressCountry: 'PK',
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: settings.ground.latitude,
+      longitude: settings.ground.longitude,
+    },
+    maximumAttendeeCapacity: settings.ground.capacity || 2500,
+  };
+
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
+      <SEO pageKey="ground" structuredData={stadiumSchema} />
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row gap-16">
           {/* Info Side */}

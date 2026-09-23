@@ -1,5 +1,5 @@
 import { 
-  collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, setDoc, 
+  collection, doc, getDocs, getDoc, addDoc, setDoc, deleteDoc, 
   query, where, serverTimestamp, orderBy, limit 
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
@@ -9,36 +9,47 @@ import {
 } from '../types';
 import { handleFirestoreError, OperationType } from '../contexts/FirebaseContext';
 import { DEFAULT_FULL_SETTINGS } from '../data/defaultConfig';
+import { 
+  INITIAL_PLAYERS, INITIAL_TEAMS, INITIAL_MATCHES, INITIAL_NEWS, 
+  INITIAL_GALLERY, INITIAL_TROPHIES, INITIAL_COMPETITIONS 
+} from '../data/mockData';
 
 export const DEFAULT_CLUB_SETTINGS = DEFAULT_FULL_SETTINGS;
+
+function cleanPayload<T extends Record<string, any>>(data: T): Record<string, any> {
+  const { id: _, ...rest } = data;
+  const cleaned: Record<string, any> = {};
+  for (const [key, value] of Object.entries(rest)) {
+    if (value !== undefined) {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
+}
 
 export const api = {
   teams: {
     getAll: async (): Promise<Team[]> => {
       try {
-        const res = await fetch('/api/teams');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) return data;
-        }
-      } catch {}
-      try {
         const snap = await getDocs(collection(db, 'teams'));
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Team));
+        if (!snap.empty) {
+          return snap.docs.map(d => ({ id: d.id, ...d.data() } as Team));
+        }
+        return INITIAL_TEAMS;
       } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, 'teams');
-        return [];
+        console.warn('Firestore teams read failed, using default data:', error);
+        return INITIAL_TEAMS;
       }
     },
     getOne: async (id: string): Promise<Team> => {
       try {
-        const res = await fetch(`/api/teams/${id}`);
-        if (res.ok) return await res.json();
-      } catch {}
-      try {
         const d = await getDoc(doc(db, 'teams', id));
-        if (!d.exists()) throw new Error('Team not found');
-        return { id: d.id, ...d.data() } as Team;
+        if (d.exists()) {
+          return { id: d.id, ...d.data() } as Team;
+        }
+        const fallback = INITIAL_TEAMS.find(t => t.id === id);
+        if (fallback) return fallback;
+        throw new Error('Team not found');
       } catch (error) {
         handleFirestoreError(error, OperationType.GET, `teams/${id}`);
         throw error;
@@ -46,27 +57,22 @@ export const api = {
     },
     create: async (data: Partial<Team>): Promise<Team> => {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch('/api/teams', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) {
-          const item = await res.json();
-          api.activity.log('Created Team', `Added team ${data.name || ''}`).catch(() => {});
-          return item;
-        }
-      } catch {}
-      try {
-        const docRef = await addDoc(collection(db, 'teams'), {
-          ...data,
+        const payload = {
+          ...cleanPayload(data),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
-        });
-        const d = await getDoc(docRef);
+        };
+        
+        let targetId = data.id;
+        if (targetId) {
+          await setDoc(doc(db, 'teams', targetId), payload, { merge: true });
+        } else {
+          const docRef = await addDoc(collection(db, 'teams'), payload);
+          targetId = docRef.id;
+        }
+
         api.activity.log('Created Team', `Added team ${data.name || ''}`).catch(() => {});
-        return { id: d.id, ...d.data() } as Team;
+        return { id: targetId, ...data } as Team;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'teams');
         throw error;
@@ -74,44 +80,19 @@ export const api = {
     },
     update: async (id: string, data: Partial<Team>): Promise<Team> => {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`/api/teams/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) {
-          const item = await res.json();
-          api.activity.log('Updated Team', `Modified team ${data.name || id}`).catch(() => {});
-          return item;
-        }
-      } catch {}
-      try {
-        const { id: _, ...rest } = data as any;
-        await updateDoc(doc(db, 'teams', id), {
-          ...rest,
+        const payload = {
+          ...cleanPayload(data),
           updatedAt: serverTimestamp()
-        });
-        const d = await getDoc(doc(db, 'teams', id));
+        };
+        await setDoc(doc(db, 'teams', id), payload, { merge: true });
         api.activity.log('Updated Team', `Modified team ${data.name || id}`).catch(() => {});
-        return { id: d.id, ...d.data() } as Team;
+        return { id, ...data } as Team;
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `teams/${id}`);
         throw error;
       }
     },
     delete: async (id: string): Promise<void> => {
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`/api/teams/${id}`, {
-          method: 'DELETE',
-          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-        });
-        if (res.ok) {
-          api.activity.log('Deleted Team', `Removed team ${id}`).catch(() => {});
-          return;
-        }
-      } catch {}
       try {
         await deleteDoc(doc(db, 'teams', id));
         api.activity.log('Deleted Team', `Removed team ${id}`).catch(() => {});
@@ -125,26 +106,26 @@ export const api = {
   players: {
     getAll: async (): Promise<Player[]> => {
       try {
-        const res = await fetch('/api/players');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            return data;
-          }
-        }
-      } catch (err) {
-        console.warn('Fetch /api/players failed, falling back to Firestore:', err);
-      }
-
-      try {
         const playersSnap = await getDocs(collection(db, 'players'));
-        const players = playersSnap.docs.map(d => ({ id: d.id, ...d.data() } as Player));
+        let players: Player[] = [];
+        
+        if (!playersSnap.empty) {
+          players = playersSnap.docs.map(d => ({ id: d.id, ...d.data() } as Player));
+        } else {
+          players = INITIAL_PLAYERS;
+        }
 
         let matches: Match[] = [];
         try {
           const matchesSnap = await getDocs(query(collection(db, 'matches'), where('status', '==', 'completed')));
-          matches = matchesSnap.docs.map(d => d.data() as Match);
-        } catch {}
+          if (!matchesSnap.empty) {
+            matches = matchesSnap.docs.map(d => d.data() as Match);
+          } else {
+            matches = INITIAL_MATCHES.filter(m => m.status === 'completed');
+          }
+        } catch {
+          matches = INITIAL_MATCHES.filter(m => m.status === 'completed');
+        }
 
         return players.map(player => {
           let goals = 0, assists = 0, yellowCards = 0, redCards = 0, appearances = 0;
@@ -180,20 +161,19 @@ export const api = {
           };
         });
       } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, 'players');
-        return [];
+        console.warn('Firestore players list error, fallback to defaults:', error);
+        return INITIAL_PLAYERS;
       }
     },
     getOne: async (id: string): Promise<Player> => {
       try {
-        const res = await fetch(`/api/players/${id}`);
-        if (res.ok) return await res.json();
-      } catch {}
-
-      try {
         const d = await getDoc(doc(db, 'players', id));
-        if (!d.exists()) throw new Error('Player not found');
-        return { id: d.id, ...d.data() } as Player;
+        if (d.exists()) {
+          return { id: d.id, ...d.data() } as Player;
+        }
+        const fallback = INITIAL_PLAYERS.find(p => p.id === id);
+        if (fallback) return fallback;
+        throw new Error('Player not found');
       } catch (error) {
         handleFirestoreError(error, OperationType.GET, `players/${id}`);
         throw error;
@@ -201,28 +181,22 @@ export const api = {
     },
     create: async (data: Partial<Player>): Promise<Player> => {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch('/api/players', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) {
-          const item = await res.json();
-          api.activity.log('Added Player', `Added squad member ${data.name || ''}`).catch(() => {});
-          return item;
-        }
-      } catch {}
-
-      try {
-        const docRef = await addDoc(collection(db, 'players'), {
-          ...data,
+        const payload = {
+          ...cleanPayload(data),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
-        });
-        const d = await getDoc(docRef);
+        };
+
+        let targetId = data.id;
+        if (targetId) {
+          await setDoc(doc(db, 'players', targetId), payload, { merge: true });
+        } else {
+          const docRef = await addDoc(collection(db, 'players'), payload);
+          targetId = docRef.id;
+        }
+
         api.activity.log('Added Player', `Added squad member ${data.name || ''}`).catch(() => {});
-        return { id: d.id, ...d.data() } as Player;
+        return { id: targetId, ...data } as Player;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'players');
         throw error;
@@ -230,46 +204,20 @@ export const api = {
     },
     update: async (id: string, data: Partial<Player>): Promise<Player> => {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`/api/players/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) {
-          const item = await res.json();
-          api.activity.log('Updated Player', `Updated player ${data.name || id}`).catch(() => {});
-          return item;
-        }
-      } catch {}
-
-      try {
-        const { id: _, ...rest } = data as any;
-        await updateDoc(doc(db, 'players', id), {
-          ...rest,
+        const payload = {
+          ...cleanPayload(data),
           updatedAt: serverTimestamp()
-        });
-        const d = await getDoc(doc(db, 'players', id));
+        };
+        // setDoc with merge: true will both update existing docs and upsert if not in Firestore yet
+        await setDoc(doc(db, 'players', id), payload, { merge: true });
         api.activity.log('Updated Player', `Updated player ${data.name || id}`).catch(() => {});
-        return { id: d.id, ...d.data() } as Player;
+        return { id, ...data } as Player;
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `players/${id}`);
         throw error;
       }
     },
     delete: async (id: string): Promise<void> => {
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`/api/players/${id}`, {
-          method: 'DELETE',
-          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-        });
-        if (res.ok) {
-          api.activity.log('Deleted Player', `Deleted player ${id}`).catch(() => {});
-          return;
-        }
-      } catch {}
-
       try {
         await deleteDoc(doc(db, 'players', id));
         api.activity.log('Deleted Player', `Deleted player ${id}`).catch(() => {});
@@ -283,31 +231,25 @@ export const api = {
   matches: {
     getAll: async (): Promise<Match[]> => {
       try {
-        const res = await fetch('/api/matches');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) return data;
-        }
-      } catch {}
-
-      try {
         const snap = await getDocs(collection(db, 'matches'));
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Match));
+        if (!snap.empty) {
+          return snap.docs.map(d => ({ id: d.id, ...d.data() } as Match));
+        }
+        return INITIAL_MATCHES;
       } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, 'matches');
-        return [];
+        console.warn('Firestore matches error, fallback to defaults:', error);
+        return INITIAL_MATCHES;
       }
     },
     getOne: async (id: string): Promise<Match> => {
       try {
-        const res = await fetch(`/api/matches/${id}`);
-        if (res.ok) return await res.json();
-      } catch {}
-
-      try {
         const d = await getDoc(doc(db, 'matches', id));
-        if (!d.exists()) throw new Error('Match not found');
-        return { id: d.id, ...d.data() } as Match;
+        if (d.exists()) {
+          return { id: d.id, ...d.data() } as Match;
+        }
+        const fallback = INITIAL_MATCHES.find(m => m.id === id);
+        if (fallback) return fallback;
+        throw new Error('Match not found');
       } catch (error) {
         handleFirestoreError(error, OperationType.GET, `matches/${id}`);
         throw error;
@@ -315,28 +257,22 @@ export const api = {
     },
     create: async (data: Partial<Match>): Promise<Match> => {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch('/api/matches', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) {
-          const item = await res.json();
-          api.activity.log('Created Match', `Added match ${data.homeTeamName} vs ${data.awayTeamName}`).catch(() => {});
-          return item;
-        }
-      } catch {}
-
-      try {
-        const docRef = await addDoc(collection(db, 'matches'), {
-          ...data,
+        const payload = {
+          ...cleanPayload(data),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
-        });
-        const d = await getDoc(docRef);
-        api.activity.log('Created Match', `Added match ${data.homeTeamName} vs ${data.awayTeamName}`).catch(() => {});
-        return { id: d.id, ...d.data() } as Match;
+        };
+
+        let targetId = data.id;
+        if (targetId) {
+          await setDoc(doc(db, 'matches', targetId), payload, { merge: true });
+        } else {
+          const docRef = await addDoc(collection(db, 'matches'), payload);
+          targetId = docRef.id;
+        }
+
+        api.activity.log('Created Match', `Added match ${data.homeTeamName || ''} vs ${data.awayTeamName || ''}`).catch(() => {});
+        return { id: targetId, ...data } as Match;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'matches');
         throw error;
@@ -344,46 +280,19 @@ export const api = {
     },
     update: async (id: string, data: Partial<Match>): Promise<Match> => {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`/api/matches/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) {
-          const item = await res.json();
-          api.activity.log('Updated Match', `Updated fixture/score ${data.homeTeamName || ''} vs ${data.awayTeamName || ''}`).catch(() => {});
-          return item;
-        }
-      } catch {}
-
-      try {
-        const { id: _, ...rest } = data as any;
-        await updateDoc(doc(db, 'matches', id), {
-          ...rest,
+        const payload = {
+          ...cleanPayload(data),
           updatedAt: serverTimestamp()
-        });
-        const d = await getDoc(doc(db, 'matches', id));
-        api.activity.log('Updated Match', `Updated match ${id}`).catch(() => {});
-        return { id: d.id, ...d.data() } as Match;
+        };
+        await setDoc(doc(db, 'matches', id), payload, { merge: true });
+        api.activity.log('Updated Match', `Updated fixture/score ${data.homeTeamName || ''} vs ${data.awayTeamName || ''}`).catch(() => {});
+        return { id, ...data } as Match;
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `matches/${id}`);
         throw error;
       }
     },
     delete: async (id: string): Promise<void> => {
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`/api/matches/${id}`, {
-          method: 'DELETE',
-          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-        });
-        if (res.ok) {
-          api.activity.log('Deleted Match', `Deleted match ${id}`).catch(() => {});
-          return;
-        }
-      } catch {}
-
       try {
         await deleteDoc(doc(db, 'matches', id));
         api.activity.log('Deleted Match', `Deleted match ${id}`).catch(() => {});
@@ -397,31 +306,25 @@ export const api = {
   news: {
     getAll: async (): Promise<News[]> => {
       try {
-        const res = await fetch('/api/news');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) return data;
-        }
-      } catch {}
-
-      try {
         const snap = await getDocs(collection(db, 'news'));
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as News));
+        if (!snap.empty) {
+          return snap.docs.map(d => ({ id: d.id, ...d.data() } as News));
+        }
+        return INITIAL_NEWS;
       } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, 'news');
-        return [];
+        console.warn('Firestore news error, fallback to defaults:', error);
+        return INITIAL_NEWS;
       }
     },
     getOne: async (id: string): Promise<News> => {
       try {
-        const res = await fetch(`/api/news/${id}`);
-        if (res.ok) return await res.json();
-      } catch {}
-
-      try {
         const d = await getDoc(doc(db, 'news', id));
-        if (!d.exists()) throw new Error('News item not found');
-        return { id: d.id, ...d.data() } as News;
+        if (d.exists()) {
+          return { id: d.id, ...d.data() } as News;
+        }
+        const fallback = INITIAL_NEWS.find(n => n.id === id);
+        if (fallback) return fallback;
+        throw new Error('News item not found');
       } catch (error) {
         handleFirestoreError(error, OperationType.GET, `news/${id}`);
         throw error;
@@ -429,28 +332,22 @@ export const api = {
     },
     create: async (data: Partial<News>): Promise<News> => {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch('/api/news', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) {
-          const item = await res.json();
-          api.activity.log('Published News', `Added article ${data.title || ''}`).catch(() => {});
-          return item;
-        }
-      } catch {}
-
-      try {
-        const docRef = await addDoc(collection(db, 'news'), {
-          ...data,
+        const payload = {
+          ...cleanPayload(data),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
-        });
-        const d = await getDoc(docRef);
+        };
+
+        let targetId = data.id;
+        if (targetId) {
+          await setDoc(doc(db, 'news', targetId), payload, { merge: true });
+        } else {
+          const docRef = await addDoc(collection(db, 'news'), payload);
+          targetId = docRef.id;
+        }
+
         api.activity.log('Published News', `Added article ${data.title || ''}`).catch(() => {});
-        return { id: d.id, ...d.data() } as News;
+        return { id: targetId, ...data } as News;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'news');
         throw error;
@@ -458,46 +355,19 @@ export const api = {
     },
     update: async (id: string, data: Partial<News>): Promise<News> => {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`/api/news/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) {
-          const item = await res.json();
-          api.activity.log('Updated News', `Modified article ${data.title || id}`).catch(() => {});
-          return item;
-        }
-      } catch {}
-
-      try {
-        const { id: _, ...rest } = data as any;
-        await updateDoc(doc(db, 'news', id), {
-          ...rest,
+        const payload = {
+          ...cleanPayload(data),
           updatedAt: serverTimestamp()
-        });
-        const d = await getDoc(doc(db, 'news', id));
+        };
+        await setDoc(doc(db, 'news', id), payload, { merge: true });
         api.activity.log('Updated News', `Modified article ${data.title || id}`).catch(() => {});
-        return { id: d.id, ...d.data() } as News;
+        return { id, ...data } as News;
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `news/${id}`);
         throw error;
       }
     },
     delete: async (id: string): Promise<void> => {
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch(`/api/news/${id}`, {
-          method: 'DELETE',
-          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-        });
-        if (res.ok) {
-          api.activity.log('Deleted News', `Removed article ${id}`).catch(() => {});
-          return;
-        }
-      } catch {}
-
       try {
         await deleteDoc(doc(db, 'news', id));
         api.activity.log('Deleted News', `Removed article ${id}`).catch(() => {});
@@ -512,21 +382,32 @@ export const api = {
     getAll: async (): Promise<Competition[]> => {
       try {
         const snap = await getDocs(collection(db, 'competitions'));
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Competition));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, 'competitions');
-        return [];
+        if (!snap.empty) {
+          return snap.docs.map(d => ({ id: d.id, ...d.data() } as Competition));
+        }
+        return INITIAL_COMPETITIONS;
+      } catch {
+        return INITIAL_COMPETITIONS;
       }
     },
     create: async (data: Partial<Competition>): Promise<Competition> => {
       try {
-        const docRef = await addDoc(collection(db, 'competitions'), {
-          ...data,
+        const payload = {
+          ...cleanPayload(data),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
-        });
-        const d = await getDoc(docRef);
-        return { id: d.id, ...d.data() } as Competition;
+        };
+
+        let targetId = data.id;
+        if (targetId) {
+          await setDoc(doc(db, 'competitions', targetId), payload, { merge: true });
+        } else {
+          const docRef = await addDoc(collection(db, 'competitions'), payload);
+          targetId = docRef.id;
+        }
+
+        api.activity.log('Created Competition', `Added ${data.name || ''}`).catch(() => {});
+        return { id: targetId, ...data } as Competition;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'competitions');
         throw error;
@@ -534,13 +415,13 @@ export const api = {
     },
     update: async (id: string, data: Partial<Competition>): Promise<Competition> => {
       try {
-        const { id: _, ...rest } = data as any;
-        await updateDoc(doc(db, 'competitions', id), {
-          ...rest,
+        const payload = {
+          ...cleanPayload(data),
           updatedAt: serverTimestamp()
-        });
-        const d = await getDoc(doc(db, 'competitions', id));
-        return { id: d.id, ...d.data() } as Competition;
+        };
+        await setDoc(doc(db, 'competitions', id), payload, { merge: true });
+        api.activity.log('Updated Competition', `Modified ${data.name || id}`).catch(() => {});
+        return { id, ...data } as Competition;
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `competitions/${id}`);
         throw error;
@@ -549,6 +430,7 @@ export const api = {
     delete: async (id: string): Promise<void> => {
       try {
         await deleteDoc(doc(db, 'competitions', id));
+        api.activity.log('Deleted Competition', `Removed ${id}`).catch(() => {});
       } catch (error) {
         handleFirestoreError(error, OperationType.DELETE, `competitions/${id}`);
         throw error;
@@ -560,21 +442,32 @@ export const api = {
     getAll: async (): Promise<Trophy[]> => {
       try {
         const snap = await getDocs(collection(db, 'trophies'));
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as Trophy));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, 'trophies');
-        return [];
+        if (!snap.empty) {
+          return snap.docs.map(d => ({ id: d.id, ...d.data() } as Trophy));
+        }
+        return INITIAL_TROPHIES;
+      } catch {
+        return INITIAL_TROPHIES;
       }
     },
     create: async (data: Partial<Trophy>): Promise<Trophy> => {
       try {
-        const docRef = await addDoc(collection(db, 'trophies'), {
-          ...data,
+        const payload = {
+          ...cleanPayload(data),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
-        });
-        const d = await getDoc(docRef);
-        return { id: d.id, ...d.data() } as Trophy;
+        };
+
+        let targetId = data.id;
+        if (targetId) {
+          await setDoc(doc(db, 'trophies', targetId), payload, { merge: true });
+        } else {
+          const docRef = await addDoc(collection(db, 'trophies'), payload);
+          targetId = docRef.id;
+        }
+
+        api.activity.log('Added Trophy', `Added achievement ${data.competition || data.achievement || ''}`).catch(() => {});
+        return { id: targetId, ...data } as Trophy;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'trophies');
         throw error;
@@ -582,13 +475,13 @@ export const api = {
     },
     update: async (id: string, data: Partial<Trophy>): Promise<Trophy> => {
       try {
-        const { id: _, ...rest } = data as any;
-        await updateDoc(doc(db, 'trophies', id), {
-          ...rest,
+        const payload = {
+          ...cleanPayload(data),
           updatedAt: serverTimestamp()
-        });
-        const d = await getDoc(doc(db, 'trophies', id));
-        return { id: d.id, ...d.data() } as Trophy;
+        };
+        await setDoc(doc(db, 'trophies', id), payload, { merge: true });
+        api.activity.log('Updated Trophy', `Modified trophy ${id}`).catch(() => {});
+        return { id, ...data } as Trophy;
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `trophies/${id}`);
         throw error;
@@ -597,6 +490,7 @@ export const api = {
     delete: async (id: string): Promise<void> => {
       try {
         await deleteDoc(doc(db, 'trophies', id));
+        api.activity.log('Deleted Trophy', `Removed trophy ${id}`).catch(() => {});
       } catch (error) {
         handleFirestoreError(error, OperationType.DELETE, `trophies/${id}`);
         throw error;
@@ -615,13 +509,13 @@ export const api = {
     },
     create: async (data: Partial<MediaItem>): Promise<MediaItem> => {
       try {
-        const docRef = await addDoc(collection(db, 'media'), {
-          ...data,
+        const payload = {
+          ...cleanPayload(data),
           uploadedAt: new Date().toISOString()
-        });
-        const d = await getDoc(docRef);
+        };
+        const docRef = await addDoc(collection(db, 'media'), payload);
         api.activity.log('Uploaded Media', `Added asset ${data.name || ''}`).catch(() => {});
-        return { id: d.id, ...d.data() } as MediaItem;
+        return { id: docRef.id, ...data } as MediaItem;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'media');
         throw error;
@@ -649,7 +543,7 @@ export const api = {
     },
     log: async (action: string, details: string): Promise<void> => {
       try {
-        const userEmail = auth.currentUser?.email || 'admin@faryalfc.com';
+        const userEmail = auth.currentUser?.email || 'mdaniyalhayyat@gmail.com';
         await addDoc(collection(db, 'activities'), {
           adminEmail: userEmail,
           action,
@@ -662,55 +556,80 @@ export const api = {
 
   backup: {
     exportData: async (): Promise<any> => {
-      const token = await auth.currentUser?.getIdToken();
-      const res = await fetch('/api/backup', {
-        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }
-      });
-      if (!res.ok) throw new Error('Failed to export backup');
-      return await res.json();
+      try {
+        const [teams, players, matches, news, competitions, trophies, gallery, settings] = await Promise.all([
+          api.teams.getAll(),
+          api.players.getAll(),
+          api.matches.getAll(),
+          api.news.getAll(),
+          api.competitions.getAll(),
+          api.trophies.getAll(),
+          api.gallery.getAll(),
+          api.settings.get()
+        ]);
+        return {
+          version: '1.0',
+          exportedAt: new Date().toISOString(),
+          data: {
+            teams,
+            players,
+            matches,
+            news,
+            competitions,
+            trophies,
+            gallery,
+            settings
+          }
+        };
+      } catch (err) {
+        console.error('Export data error:', err);
+        throw err;
+      }
     },
-    restoreData: async (data: any): Promise<any> => {
-      const token = await auth.currentUser?.getIdToken();
-      const res = await fetch('/api/backup/restore', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ data })
-      });
-      if (!res.ok) throw new Error('Failed to restore backup');
-      api.activity.log('Restored Backup', 'Imported club dataset from backup').catch(() => {});
-      return await res.json();
+    restoreData: async (backupData: any): Promise<any> => {
+      try {
+        const dataset = backupData.data || backupData;
+        if (dataset.settings) {
+          await api.settings.update(dataset.settings);
+        }
+        if (Array.isArray(dataset.players)) {
+          for (const p of dataset.players) {
+            await setDoc(doc(db, 'players', p.id || String(Date.now())), cleanPayload(p), { merge: true });
+          }
+        }
+        if (Array.isArray(dataset.teams)) {
+          for (const t of dataset.teams) {
+            await setDoc(doc(db, 'teams', t.id || String(Date.now())), cleanPayload(t), { merge: true });
+          }
+        }
+        if (Array.isArray(dataset.matches)) {
+          for (const m of dataset.matches) {
+            await setDoc(doc(db, 'matches', m.id || String(Date.now())), cleanPayload(m), { merge: true });
+          }
+        }
+        if (Array.isArray(dataset.news)) {
+          for (const n of dataset.news) {
+            await setDoc(doc(db, 'news', n.id || String(Date.now())), cleanPayload(n), { merge: true });
+          }
+        }
+        api.activity.log('Restored Backup', 'Imported club dataset from backup').catch(() => {});
+        return { success: true };
+      } catch (err) {
+        console.error('Restore error:', err);
+        throw err;
+      }
     }
   },
 
   upload: {
     image: async (base64Data: string, name: string): Promise<string> => {
-      try {
-        const res = await fetch('/api/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64Data, name })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          return data.url;
-        }
-      } catch {}
+      // Return base64 data for seamless local and offline storage
       return base64Data;
     }
   },
 
   settings: {
     get: async (): Promise<ClubSettings> => {
-      try {
-        const res = await fetch('/api/settings');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.name) {
-            return { ...DEFAULT_FULL_SETTINGS, ...data };
-          }
-        }
-      } catch {}
-
       try {
         const d = await getDoc(doc(db, 'settings', 'club'));
         if (d.exists()) {
@@ -724,21 +643,8 @@ export const api = {
     },
     update: async (data: Partial<ClubSettings>): Promise<ClubSettings> => {
       try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch('/api/settings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) {
-          const item = await res.json();
-          api.activity.log('Updated Settings', 'Modified global website configuration').catch(() => {});
-          return item;
-        }
-      } catch {}
-
-      try {
-        await setDoc(doc(db, 'settings', 'club'), data, { merge: true });
+        const payload = cleanPayload(data);
+        await setDoc(doc(db, 'settings', 'club'), payload, { merge: true });
         const d = await getDoc(doc(db, 'settings', 'club'));
         api.activity.log('Updated Settings', 'Modified global website configuration').catch(() => {});
         return (d.data() as ClubSettings) || DEFAULT_FULL_SETTINGS;
@@ -752,22 +658,18 @@ export const api = {
   standings: {
     get: async (): Promise<Team[]> => {
       try {
-        const res = await fetch('/api/standings');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) return data;
-        }
-      } catch {}
-
-      try {
-        const teamsSnap = await getDocs(collection(db, 'teams'));
-        const teams = teamsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Team));
-
+        const teams = await api.teams.getAll();
         let matches: Match[] = [];
         try {
           const matchesSnap = await getDocs(query(collection(db, 'matches'), where('status', '==', 'completed')));
-          matches = matchesSnap.docs.map(doc => doc.data() as Match);
-        } catch {}
+          if (!matchesSnap.empty) {
+            matches = matchesSnap.docs.map(doc => doc.data() as Match);
+          } else {
+            matches = INITIAL_MATCHES.filter(m => m.status === 'completed');
+          }
+        } catch {
+          matches = INITIAL_MATCHES.filter(m => m.status === 'completed');
+        }
 
         const stats = teams.map((team: Team) => {
           const teamMatches = matches.filter(m => m.homeTeamId === team.id || m.awayTeamId === team.id);
@@ -816,21 +718,29 @@ export const api = {
     getAll: async (): Promise<GalleryItem[]> => {
       try {
         const snap = await getDocs(collection(db, 'gallery'));
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as GalleryItem));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, 'gallery');
-        return [];
+        if (!snap.empty) {
+          return snap.docs.map(d => ({ id: d.id, ...d.data() } as GalleryItem));
+        }
+        return INITIAL_GALLERY;
+      } catch {
+        return INITIAL_GALLERY;
       }
     },
     create: async (data: Partial<GalleryItem>): Promise<GalleryItem> => {
       try {
-        const docRef = await addDoc(collection(db, 'gallery'), {
-          ...data,
+        const payload = {
+          ...cleanPayload(data),
           createdAt: serverTimestamp()
-        });
-        const d = await getDoc(docRef);
+        };
+        let targetId = data.id;
+        if (targetId) {
+          await setDoc(doc(db, 'gallery', targetId), payload, { merge: true });
+        } else {
+          const docRef = await addDoc(collection(db, 'gallery'), payload);
+          targetId = docRef.id;
+        }
         api.activity.log('Added Gallery Photo', `Uploaded image ${data.caption || ''}`).catch(() => {});
-        return { id: d.id, ...d.data() } as GalleryItem;
+        return { id: targetId, ...data } as GalleryItem;
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, 'gallery');
         throw error;

@@ -5,6 +5,7 @@ import { Newspaper, Calendar, User, ArrowRight, Loader2, Tag } from 'lucide-reac
 import { api } from '../lib/api';
 import { News } from '../types';
 import { formatDate } from '../lib/utils';
+import { SEO } from '../components/SEO';
 
 export const NewsPage: React.FC = () => {
   const [newsList, setNewsList] = useState<News[]>([]);
@@ -41,6 +42,7 @@ export const NewsPage: React.FC = () => {
 
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
+      <SEO pageKey="news" />
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-16">
           <div className="text-center md:text-left">

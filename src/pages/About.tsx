@@ -1,10 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Users, Heart, Target } from 'lucide-react';
+import { SEO } from '../components/SEO';
 
 export const About: React.FC = () => {
   return (
     <div className="pt-32 pb-24 px-6 bg-slate-950 min-h-screen">
+      <SEO pageKey="about" />
       <div className="max-w-7xl mx-auto">
         {/* Story Section */}
         <div className="flex flex-col lg:flex-row gap-16 items-center mb-32">
