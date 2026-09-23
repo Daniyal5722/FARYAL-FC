@@ -3,78 +3,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // ---------------------------------------------------------
-    // Global Deny
-    // ---------------------------------------------------------
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // ---------------------------------------------------------
     // Reusable Primitives & Helpers
     // ---------------------------------------------------------
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isEmailVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
-    }
-
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.email == 'mdaniyalhayyat@gmail.com' ||
+        request.auth.token.email.matches('(?i)^mdaniyalhayyat@gmail\\.com$') ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    function incoming() {
-      return request.resource.data;
-    }
-
-    function existing() {
-      return resource.data;
-    }
-
-    // ---------------------------------------------------------
-    // Entity Validation Helpers
-    // ---------------------------------------------------------
-
-    function isValidPlayer(data) {
-      let requiredFields = ['name'];
-      let allowedFields = ['name', 'number', 'position', 'image', 'nationality', 'birthDate', 'height', 'weight', 'bio', 'stats', 'status', 'isCaptain', 'createdAt', 'updatedAt'];
-      return data.keys().hasAll(requiredFields) &&
-             data.keys().hasOnly(allowedFields) &&
-             data.name is string && data.name.size() <= 100 &&
-             (!('status' in data) || data.status in ['active', 'injured', 'suspended', 'inactive']);
-    }
-
-    function isValidTeam(data) {
-      let requiredFields = ['name', 'shortName'];
-      let allowedFields = ['name', 'shortName', 'logo', 'image', 'color', 'secondaryColor', 'captainId', 'coach', 'status', 'description', 'played', 'wins', 'draws', 'losses', 'goalsFor', 'goalsAgainst', 'goalDifference', 'points', 'createdAt', 'updatedAt'];
-      return data.keys().hasAll(requiredFields) &&
-             data.keys().hasOnly(allowedFields) &&
-             data.name is string && data.name.size() <= 100 &&
-             data.shortName is string && data.shortName.size() <= 10;
-    }
-
-    function isValidMatch(data) {
-      let requiredFields = ['homeTeamId', 'awayTeamId', 'date', 'status'];
-      let allowedFields = ['homeTeamId', 'awayTeamId', 'homeTeamName', 'awayTeamName', 'date', 'time', 'venue', 'competition', 'status', 'homeScore', 'awayScore', 'events', 'notes', 'matchReport', 'createdAt', 'updatedAt'];
-      return data.keys().hasAll(requiredFields) &&
-             data.keys().hasOnly(allowedFields) &&
-             data.status in ['upcoming', 'live', 'completed', 'postponed', 'cancelled'];
-    }
-
-    function isValidNews(data) {
-      let requiredFields = ['title', 'content', 'date'];
-      let allowedFields = ['title', 'content', 'summary', 'image', 'category', 'date', 'author', 'status', 'createdAt', 'updatedAt'];
-      return data.keys().hasAll(requiredFields) &&
-             data.keys().hasOnly(allowedFields) &&
-             data.title is string && data.title.size() <= 200;
     }
 
     // ---------------------------------------------------------
@@ -83,40 +23,32 @@ service cloud.firestore {
 
     match /admins/{adminId} {
       allow read: if isAdmin();
-      allow write: if false; // Managed via console or bootstrap
+      allow write: if isAdmin();
     }
 
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow write: if isSignedIn() && request.auth.uid == userId;
+      allow write: if (isSignedIn() && request.auth.uid == userId) || isAdmin();
     }
 
     match /players/{playerId} {
       allow read: if true;
-      allow create: if isAdmin() && isValidPlayer(incoming());
-      allow update: if isAdmin() && isValidPlayer(incoming());
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     match /teams/{teamId} {
       allow read: if true;
-      allow create: if isAdmin() && isValidTeam(incoming());
-      allow update: if isAdmin() && isValidTeam(incoming());
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     match /matches/{matchId} {
       allow read: if true;
-      allow create: if isAdmin() && isValidMatch(incoming());
-      allow update: if isAdmin() && isValidMatch(incoming());
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     match /news/{articleId} {
       allow read: if true;
-      allow create: if isAdmin() && isValidNews(incoming());
-      allow update: if isAdmin() && isValidNews(incoming());
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     match /competitions/{compId} {

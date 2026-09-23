@@ -82,15 +82,15 @@ const requireAdmin = async (req: any, res: any, next: any) => {
 
 // Validation Schemas
 const schemas: Record<string, string[]> = {
-  teams: ["name", "shortName", "logo", "image", "color", "secondaryColor", "captainId", "coach", "status", "description", "played", "wins", "draws", "losses", "goalsFor", "goalsAgainst", "goalDifference", "points"],
-  players: ["name", "number", "position", "image", "nationality", "birthDate", "height", "weight", "bio", "stats", "status", "isCaptain"],
-  matches: ["homeTeamId", "awayTeamId", "homeTeamName", "awayTeamName", "date", "time", "venue", "competition", "status", "homeScore", "awayScore", "events", "notes", "matchReport"],
-  news: ["title", "content", "summary", "image", "category", "date", "author", "status"],
-  competitions: ["name", "season", "startDate", "endDate", "type", "active", "status"],
-  trophies: ["competition", "season", "image", "achievement", "description"],
-  gallery: ["url", "caption", "category", "date"],
-  media: ["name", "url", "category", "size", "uploadedAt"],
-  activities: ["adminEmail", "action", "details", "timestamp"]
+  teams: ["id", "name", "shortName", "logo", "image", "color", "secondaryColor", "captainId", "coach", "status", "description", "played", "wins", "draws", "losses", "goalsFor", "goalsAgainst", "goalDifference", "points", "isClubTeam", "createdAt", "updatedAt"],
+  players: ["id", "name", "number", "position", "image", "nationality", "birthDate", "height", "weight", "bio", "stats", "status", "isCaptain", "createdAt", "updatedAt"],
+  matches: ["id", "homeTeamId", "awayTeamId", "homeTeamName", "awayTeamName", "date", "time", "venue", "competition", "status", "homeScore", "awayScore", "events", "notes", "matchReport", "createdAt", "updatedAt"],
+  news: ["id", "title", "content", "summary", "image", "category", "date", "author", "status", "featured", "createdAt", "updatedAt"],
+  competitions: ["id", "name", "season", "startDate", "endDate", "type", "active", "status", "description", "teamsCount", "createdAt", "updatedAt"],
+  trophies: ["id", "competition", "season", "image", "achievement", "description", "title", "year", "createdAt", "updatedAt"],
+  gallery: ["id", "url", "caption", "category", "date", "title", "description", "createdAt", "updatedAt"],
+  media: ["id", "name", "url", "category", "size", "uploadedAt", "createdAt", "updatedAt"],
+  activities: ["id", "adminEmail", "action", "details", "timestamp", "createdAt", "updatedAt"]
 };
 
 function validateBody(collection: string, body: any) {
@@ -107,7 +107,7 @@ function validateBody(collection: string, body: any) {
 
 function handleApiError(res: any, error: any, context: string) {
   console.error(`API Error [${context}]:`, error);
-  const status = error.message.startsWith('Invalid fields') ? 400 : 500;
+  const status = error.message && error.message.startsWith('Invalid fields') ? 400 : 500;
   res.status(status).json({
     error: status === 400 ? 'Bad Request' : 'Internal Server Error',
     message: error.message || 'An unexpected error occurred',

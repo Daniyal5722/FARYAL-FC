@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { onIdTokenChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, onIdTokenChanged, User } from 'firebase/auth';
 import { auth, db } from '../../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { Shield, Loader2, Lock } from 'lucide-react';
+import { Shield, Loader2 } from 'lucide-react';
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -24,8 +24,8 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children }) => {
   });
 
   useEffect(() => {
-    // Real-time Firebase Auth token and session listener
-    const unsubscribe = onIdTokenChanged(auth, async (currentUser) => {
+    // Real Firebase Auth state listener
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         setAuthState({
           isLoading: false,
@@ -37,7 +37,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children }) => {
       }
 
       try {
-        // Validate active token
+        // Validate fresh ID Token
         const token = await currentUser.getIdToken();
         if (!token) {
           setAuthState({
@@ -49,15 +49,15 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children }) => {
           return;
         }
 
-        // Validate administrator permissions
-        const isMasterAdmin = currentUser.email === 'mdaniyalhayyat@gmail.com';
+        // Verify administrator authorization
+        const isMasterAdmin = currentUser.email?.toLowerCase() === 'mdaniyalhayyat@gmail.com';
         let isDocAdmin = false;
 
         try {
           const adminDoc = await getDoc(doc(db, 'admins', currentUser.uid));
           isDocAdmin = adminDoc.exists();
         } catch {
-          // If firestore rules block admin list query, fallback to master admin check
+          // In case rules restrict collection query
         }
 
         const hasAdminAccess = isMasterAdmin || isDocAdmin;
@@ -69,11 +69,11 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children }) => {
           user: currentUser,
         });
       } catch (err) {
-        console.error('Session verification error:', err);
+        console.error('Firebase Auth Guard check error:', err);
         setAuthState({
           isLoading: false,
           isAuthenticated: !!currentUser,
-          isAdmin: currentUser.email === 'mdaniyalhayyat@gmail.com',
+          isAdmin: currentUser.email?.toLowerCase() === 'mdaniyalhayyat@gmail.com',
           user: currentUser,
         });
       }
@@ -101,6 +101,7 @@ export const AdminGuard: React.FC<AdminGuardProps> = ({ children }) => {
     );
   }
 
+  // Proper redirect logic for unauthenticated or non-admin users
   if (!authState.isAuthenticated || !authState.isAdmin) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
