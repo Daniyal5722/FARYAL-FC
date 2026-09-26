@@ -519,7 +519,7 @@ ${allPages
         "name", "shortName", "founded", "logo", "headerLogo", "footerLogo", "favicon", "tagline",
         "primaryColor", "secondaryColor", "stadium", "ground", "history", "vision", "mission",
         "socials", "contact", "footer", "theme", "branding", "hero", "homepageSections",
-        "navigation", "seo", "maintenance"
+        "navigation", "seo", "maintenance", "formation"
       ];
       const invalidKeys = Object.keys(req.body).filter(key => !allowedSettingsKeys.includes(key));
       if (invalidKeys.length > 0) {
