@@ -1,13 +1,22 @@
 import express from "express";
 import path from "path";
 import fs from "fs/promises";
+import fsSync from "fs";
 import { createServer as createViteServer } from "vite";
 import { initializeApp, getApps, getApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 
-// Initialize Firebase Admin
-import firebaseConfig from "./firebase-applet-config.json";
+// Initialize Firebase Admin safely
+let firebaseConfig: any = { projectId: 'ai-studio-faryalfc-f96a0aa8-dbbf-46a6-8a84-6432723334dc' };
+try {
+  const configPath = path.resolve(process.cwd(), "firebase-applet-config.json");
+  if (fsSync.existsSync(configPath)) {
+    firebaseConfig = JSON.parse(fsSync.readFileSync(configPath, "utf-8"));
+  }
+} catch (e) {
+  console.warn("Could not read firebase-applet-config.json:", e);
+}
 
 let app: any;
 try {
@@ -665,12 +674,15 @@ ${allPages
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false },
       appType: "spa",
     });
     app.use(vite.middlewares);
 
     app.get("*", async (req, res, next) => {
+      if (req.originalUrl.startsWith("/api")) {
+        return res.status(404).json({ error: "Not Found" });
+      }
       const url = req.originalUrl;
       try {
         let template = await fs.readFile(path.resolve(process.cwd(), "index.html"), "utf-8");
@@ -685,6 +697,9 @@ ${allPages
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
+      if (req.originalUrl.startsWith("/api")) {
+        return res.status(404).json({ error: "Not Found" });
+      }
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
