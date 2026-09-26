@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { ClubSettings, ThemeConfig, BrandingConfig, HeroConfig, HomepageSection, NavigationItem, SEOConfig, MaintenanceConfig } from '../types';
-import { DEFAULT_FULL_SETTINGS, DEFAULT_THEME, THEME_PRESETS } from '../data/defaultConfig';
+import { ClubSettings, ThemeConfig, BrandingConfig, HeroConfig, HomepageSection, NavigationItem, SEOConfig, MaintenanceConfig, FormationConfig } from '../types';
+import { DEFAULT_FULL_SETTINGS, DEFAULT_THEME, THEME_PRESETS, DEFAULT_FORMATION_CONFIG } from '../data/defaultConfig';
 import { api } from '../lib/api';
 import { useFirebase } from './FirebaseContext';
 
@@ -9,6 +9,7 @@ interface ThemeSettingsContextType {
   theme: ThemeConfig;
   branding: BrandingConfig;
   hero: HeroConfig;
+  formation: FormationConfig;
   homepageSections: HomepageSection[];
   navigation: NavigationItem[];
   seo: SEOConfig;
@@ -86,6 +87,7 @@ export const ThemeSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
             navigation: data.navigation || DEFAULT_FULL_SETTINGS.navigation,
             seo: { ...DEFAULT_FULL_SETTINGS.seo!, ...(data.seo || {}) },
             maintenance: { ...DEFAULT_FULL_SETTINGS.maintenance!, ...(data.maintenance || {}) },
+            formation: { ...DEFAULT_FORMATION_CONFIG, ...(data.formation || {}) },
             ground: { ...DEFAULT_FULL_SETTINGS.ground, ...(data.ground || {}) },
             socials: { ...DEFAULT_FULL_SETTINGS.socials, ...(data.socials || {}) },
             contact: { ...DEFAULT_FULL_SETTINGS.contact, ...(data.contact || {}) },
@@ -119,6 +121,7 @@ export const ThemeSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       hero: newSettings.hero ? { ...settings.hero!, ...newSettings.hero } : settings.hero,
       seo: newSettings.seo ? { ...settings.seo!, ...newSettings.seo } : settings.seo,
       maintenance: newSettings.maintenance ? { ...settings.maintenance!, ...newSettings.maintenance } : settings.maintenance,
+      formation: newSettings.formation ? { ...settings.formation!, ...newSettings.formation } : settings.formation,
     };
 
     setSettings(updated);
@@ -178,6 +181,7 @@ export const ThemeSettingsProvider: React.FC<{ children: React.ReactNode }> = ({
         navigation: settings.navigation || DEFAULT_FULL_SETTINGS.navigation!,
         seo: settings.seo || DEFAULT_FULL_SETTINGS.seo!,
         maintenance: settings.maintenance || DEFAULT_FULL_SETTINGS.maintenance!,
+        formation: settings.formation || DEFAULT_FORMATION_CONFIG,
         loading,
         updateSettings,
         updateTheme,

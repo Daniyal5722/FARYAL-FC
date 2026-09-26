@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Users, Trophy, Newspaper, Settings, Palette, Calendar, MapPin, Image as ImageIcon, Layout, Navigation as NavIcon, Globe, Shield } from 'lucide-react';
+import { Search, X, Users, Trophy, Newspaper, Settings, Palette, Calendar, MapPin, Image as ImageIcon, Layout, Navigation as NavIcon, Globe, Shield, Layers } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { Player, Match, News, Team } from '../../types';
@@ -54,6 +54,7 @@ export const AdminSearchModal: React.FC<AdminSearchModalProps> = ({ isOpen, onCl
     { label: 'Players Squad', path: '/admin/players', icon: <Users size={16} /> },
     { label: 'Teams & Clubs', path: '/admin/teams', icon: <Trophy size={16} /> },
     { label: 'Matches & Scores', path: '/admin/matches', icon: <Calendar size={16} /> },
+    { label: 'Match Formation & Tactics', path: '/admin/formation', icon: <Layers size={16} /> },
     { label: 'League Standings', path: '/admin/standings', icon: <Trophy size={16} /> },
     { label: 'News & Articles', path: '/admin/news', icon: <Newspaper size={16} /> },
     { label: 'Media Library', path: '/admin/media', icon: <ImageIcon size={16} /> },

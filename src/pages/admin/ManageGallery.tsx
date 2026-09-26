@@ -162,7 +162,7 @@ export const ManageGallery: React.FC = () => {
               >
                 <div className="aspect-square relative overflow-hidden bg-slate-900">
                   <img
-                    src={item.url}
+                    src={item.url || 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800&auto=format&fit=crop'}
                     alt={item.caption}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />

@@ -6,7 +6,9 @@ import {
   NavigationItem,
   SEOConfig,
   MaintenanceConfig,
-  ClubSettings
+  ClubSettings,
+  FormationConfig,
+  TacticalPillar
 } from '../types';
 
 export const DEFAULT_THEME: ThemeConfig = {
@@ -226,6 +228,23 @@ export const DEFAULT_MAINTENANCE: MaintenanceConfig = {
   allowAdminBypass: true,
 };
 
+export const DEFAULT_TACTICAL_PILLARS: TacticalPillar[] = [
+  { title: 'Attacking Philosophy', desc: 'Faryal FC prioritizes high-pressing and fast transitions through technical wingers.' },
+  { title: 'Defensive Solidity', desc: 'A disciplined backline focusing on zonal marking and physical dominance in the air.' },
+  { title: 'Midfield Vision', desc: 'The engine room focuses on possession retention and quick vertical passes to find gaps.' },
+];
+
+export const DEFAULT_FORMATION_CONFIG: FormationConfig = {
+  defaultFormation: '4-3-3',
+  enabledFormations: ['4-4-2', '4-3-3', '4-2-3-1', '3-5-2', '3-4-3', '5-3-2'],
+  title: 'MATCH FORMATION',
+  subtitle: 'Tactical Center',
+  description: 'Explore the tactical setups used by Faryal FC. Switch between different formations to see our strategic lineup.',
+  tacticalNotes: 'High-intensity press with rapid winger transitions and possession control.',
+  tacticalPillars: DEFAULT_TACTICAL_PILLARS,
+  lineup: {},
+};
+
 export const DEFAULT_FULL_SETTINGS: ClubSettings = {
   name: 'Faryal FC',
   shortName: 'FFC',
@@ -280,4 +299,5 @@ export const DEFAULT_FULL_SETTINGS: ClubSettings = {
   navigation: DEFAULT_NAVIGATION,
   seo: DEFAULT_SEO,
   maintenance: DEFAULT_MAINTENANCE,
+  formation: DEFAULT_FORMATION_CONFIG,
 };

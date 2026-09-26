@@ -75,6 +75,12 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    match /registrations/{regId} {
+      allow read: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
     match /settings/{settingDoc} {
       allow read: if true;
       allow write: if isAdmin();

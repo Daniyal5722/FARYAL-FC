@@ -211,6 +211,69 @@ export const PLAYERS: Player[] = [
       redCards: 0
     },
     status: "active"
+  },
+  {
+    id: "player-farhan",
+    name: "Farhan Ali",
+    number: 2,
+    position: "Defender",
+    image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=400&auto=format&fit=crop",
+    nationality: "Pakistan",
+    birthDate: "2002-05-18",
+    height: "179 cm",
+    weight: "74 kg",
+    bio: "Energetic fullback known for solid 1v1 defensive duties and fast attacking transition down the flank.",
+    stats: {
+      appearances: 6,
+      goals: 0,
+      assists: 2,
+      cleanSheets: 3,
+      yellowCards: 1,
+      redCards: 0
+    },
+    status: "active"
+  },
+  {
+    id: "player-rehan",
+    name: "Rehan Siddiqui",
+    number: 3,
+    position: "Defender",
+    image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=400&auto=format&fit=crop",
+    nationality: "Pakistan",
+    birthDate: "2001-10-12",
+    height: "181 cm",
+    weight: "76 kg",
+    bio: "Disciplined right-back with great positioning, aggressive ball-interceptions and accurate whipped crosses.",
+    stats: {
+      appearances: 5,
+      goals: 0,
+      assists: 1,
+      cleanSheets: 2,
+      yellowCards: 1,
+      redCards: 0
+    },
+    status: "active"
+  },
+  {
+    id: "player-tariq",
+    name: "Tariq Mehmood",
+    number: 16,
+    position: "Midfielder",
+    image: "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?q=80&w=400&auto=format&fit=crop",
+    nationality: "Pakistan",
+    birthDate: "2000-09-04",
+    height: "182 cm",
+    weight: "77 kg",
+    bio: "Composed midfield distributor capable of controlling match tempo and shielding the defensive line.",
+    stats: {
+      appearances: 6,
+      goals: 1,
+      assists: 3,
+      cleanSheets: 0,
+      yellowCards: 2,
+      redCards: 0
+    },
+    status: "active"
   }
 ];
 

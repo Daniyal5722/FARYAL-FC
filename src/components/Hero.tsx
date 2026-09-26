@@ -4,8 +4,11 @@ import { ArrowRight, Trophy, Calendar, MapPin, Shield, Play, Loader2 } from 'luc
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { ClubSettings, Match } from '../types';
+import { useThemeSettings } from '../contexts/ThemeSettingsContext';
+import { DEFAULT_HERO } from '../data/defaultConfig';
 
 export const Hero: React.FC = () => {
+  const { hero: contextHero } = useThemeSettings();
   const [settings, setSettings] = useState<ClubSettings | null>(null);
   const [nextMatch, setNextMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +34,12 @@ export const Hero: React.FC = () => {
     fetchData();
   }, []);
 
+  const hero = contextHero || settings?.hero || DEFAULT_HERO;
+
+  if (hero.visible === false) {
+    return null;
+  }
+
   if (loading || !settings) {
     return (
       <div className="h-screen w-full bg-slate-950 flex items-center justify-center">
@@ -44,7 +53,7 @@ export const Hero: React.FC = () => {
       {/* 21st.dev Style Ambient Stadium Backdrop & Mesh Lines */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <img
-          src="/faryal_stadium_hero.jpg"
+          src={hero.backgroundImage || "/faryal_stadium_hero.jpg"}
           alt="Faryal FC Stadium"
           className="w-full h-full object-cover opacity-25 scale-105 filter brightness-75 contrast-125"
           referrerPolicy="no-referrer"
@@ -68,9 +77,9 @@ export const Hero: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="flex flex-wrap items-center justify-center lg:justify-start gap-2 text-xs font-black uppercase tracking-[0.25em] text-blue-400 mb-6"
           >
-            <span>KARACHI ELITE LEAGUE</span>
+            <span>{hero.subtitle || 'BUILT FOR THE GAME'}</span>
             <span aria-hidden="true" className="text-slate-700">•</span>
-            <span>EST. {settings.founded}</span>
+            <span>EST. {settings.founded || '2024'}</span>
             <span aria-hidden="true" className="text-slate-700">•</span>
             <span>MODEL COLONY</span>
           </motion.div>
@@ -82,7 +91,7 @@ export const Hero: React.FC = () => {
             transition={{ duration: 0.7, delay: 0.1 }}
             className="text-6xl sm:text-8xl lg:text-[7.5rem] font-black text-white tracking-tighter uppercase italic leading-[0.85] mb-6 drop-shadow-2xl"
           >
-            FARYAL <span className="text-slate-700">FC</span>
+            {hero.title || 'FARYAL FC'}
           </motion.h1>
 
           <motion.p
@@ -91,7 +100,7 @@ export const Hero: React.FC = () => {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="text-slate-400 text-lg sm:text-xl font-medium leading-relaxed max-w-2xl mx-auto lg:mx-0 mb-10"
           >
-            The pride of Model Colony, Karachi. Driven by technical mastery, unyielding teamwork, and relentless pursuit of championship glory.
+            {hero.description || 'Developing elite football talent with tactical discipline, uncompromising spirit, and professional standards in Karachi, Pakistan.'}
           </motion.p>
 
           {/* CTA Buttons */}
@@ -102,19 +111,19 @@ export const Hero: React.FC = () => {
             className="flex flex-wrap items-center justify-center lg:justify-start gap-4 mb-12"
           >
             <Link
-              to="/matches"
+              to={hero.ctaLink || '/team'}
               className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-[0.2em] rounded-xl transition-all shadow-xl shadow-blue-600/30 flex items-center gap-3 group"
             >
-              EXPLORE MATCHES
+              {hero.ctaText || 'VIEW SQUAD'}
               <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
             </Link>
 
             <Link
-              to="/team"
+              to={hero.secondaryCtaLink || '/matches'}
               className="px-8 py-4 bg-slate-900/80 hover:bg-slate-800 text-slate-200 font-black text-xs uppercase tracking-[0.2em] rounded-xl transition-all border border-slate-800 hover:border-slate-700 flex items-center gap-2"
             >
               <Shield size={16} className="text-blue-500" />
-              SQUAD ROSTER
+              {hero.secondaryCtaText || 'LATEST FIXTURES'}
             </Link>
           </motion.div>
 

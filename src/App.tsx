@@ -38,6 +38,7 @@ import { ManageTrophies } from './pages/admin/ManageTrophies';
 import { ManageBranding } from './pages/admin/ManageBranding';
 import { ManageTheme } from './pages/admin/ManageTheme';
 import { ManageHomepage } from './pages/admin/ManageHomepage';
+import { ManageFormation } from './pages/admin/ManageFormation';
 import { ManageNavigation } from './pages/admin/ManageNavigation';
 import { ManageMedia } from './pages/admin/ManageMedia';
 import { ManageActivity } from './pages/admin/ManageActivity';
@@ -88,6 +89,7 @@ export default function App() {
                 <Route path="teams" element={<ManageTeams />} />
                 <Route path="players" element={<ManagePlayers />} />
                 <Route path="matches" element={<ManageMatches />} />
+                <Route path="formation" element={<ManageFormation />} />
                 <Route path="competitions" element={<ManageCompetitions />} />
                 <Route path="news" element={<ManageNews />} />
                 <Route path="gallery" element={<ManageGallery />} />

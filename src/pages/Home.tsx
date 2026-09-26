@@ -217,8 +217,15 @@ export const Home: React.FC = () => {
                             </td>
                             <td className="px-8 py-5">
                               <div className="flex items-center gap-4">
-                                <div className="w-8 h-8 bg-slate-950 rounded-lg p-1.5 border border-slate-800 group-hover:scale-110 transition-transform">
-                                  <img src={team.logo} alt="" className="w-full h-full object-contain" />
+                                <div className="w-8 h-8 bg-slate-950 rounded-lg p-1.5 border border-slate-800 group-hover:scale-110 transition-transform flex items-center justify-center">
+                                  <img
+                                    src={team.logo || '/logo.png'}
+                                    alt={team.name}
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = '/logo.png';
+                                    }}
+                                  />
                                 </div>
                                 <span className="text-sm font-black text-white uppercase italic tracking-tighter leading-none">{team.name}</span>
                               </div>
@@ -327,8 +334,15 @@ export const Home: React.FC = () => {
                 viewport={{ once: true }}
                 className="group bg-slate-900 border border-slate-800 rounded-[2.5rem] overflow-hidden hover:border-blue-500 transition-all duration-500"
               >
-                <div className="aspect-[4/3] relative overflow-hidden">
-                  <img src={article.image} alt={article.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                <div className="aspect-[4/3] relative overflow-hidden bg-slate-950">
+                  <img
+                    src={article.image || 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800&auto=format&fit=crop'}
+                    alt={article.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800&auto=format&fit=crop';
+                    }}
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
                   <div className="absolute top-6 left-6">
                     <span className="bg-blue-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-xl shadow-blue-600/30">
@@ -350,6 +364,84 @@ export const Home: React.FC = () => {
                 </div>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Home Ground Showcase Section */}
+      <section className="py-28 px-6 relative bg-slate-900/40 border-t border-slate-900">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div className="lg:col-span-6 space-y-6">
+              <div>
+                <span className="text-blue-500 font-black uppercase tracking-[0.3em] text-[10px] mb-3 block">
+                  Club Home Fortress
+                </span>
+                <h2 className="text-4xl sm:text-6xl font-black text-white italic tracking-tighter uppercase leading-none">
+                  FARYAL <span className="text-slate-800">GROUND</span>
+                </h2>
+              </div>
+              <p className="text-slate-400 text-sm sm:text-base font-medium leading-relaxed">
+                {settings.ground?.description || 'The official fortress of Faryal FC situated in Model Colony, Karachi. Built for high-intensity competitive football with natural grass turf, full floodlighting, and matchday amenities.'}
+              </p>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Surface</p>
+                  <p className="text-sm font-black text-white uppercase italic mt-1">{settings.ground?.surface || 'Natural Turf'}</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Capacity</p>
+                  <p className="text-sm font-black text-white uppercase italic mt-1">{settings.ground?.capacity || '1,500'} Seats</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 col-span-2 sm:col-span-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location</p>
+                  <p className="text-sm font-black text-white uppercase italic mt-1">Model Colony</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 pt-4">
+                <Link
+                  to="/ground"
+                  className="px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-blue-600/30 flex items-center gap-2"
+                >
+                  <span>Explore Ground & Facilities</span>
+                  <ArrowRight size={14} />
+                </Link>
+                <Link
+                  to="/formation"
+                  className="px-6 py-3.5 bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-800 transition-colors"
+                >
+                  <span>Match Formation & Pitch</span>
+                </Link>
+              </div>
+            </div>
+
+            <div className="lg:col-span-6">
+              <div className="relative rounded-[2.5rem] overflow-hidden border border-slate-800 shadow-2xl group">
+                <div className="aspect-[16/10] overflow-hidden bg-slate-950">
+                  <img
+                    src="/faryal_stadium_hero.jpg"
+                    alt={settings.ground?.name || 'Faryal FC Ground'}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1522778119026-d647f0596c20?q=80&w=1200&auto=format&fit=crop';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                  <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-blue-400 block">
+                        Venue Coordinates
+                      </span>
+                      <p className="text-xs font-bold text-white uppercase tracking-tight">
+                        {settings.ground?.address || '20-A Main Rd, Model Colony, Karachi'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

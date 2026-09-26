@@ -131,7 +131,13 @@ export const Gallery: React.FC = () => {
               className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer border border-slate-800 bg-slate-900 hover:border-blue-500 transition-all"
             >
               <img
-                src={`${img.url}?q=80&w=800&auto=format&fit=crop`}
+                src={
+                  img.url
+                    ? img.url.includes('unsplash')
+                      ? `${img.url}?q=80&w=800&auto=format&fit=crop`
+                      : img.url
+                    : 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800&auto=format&fit=crop'
+                }
                 alt={img.caption || "Gallery"}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 referrerPolicy="no-referrer"

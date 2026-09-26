@@ -50,8 +50,12 @@ export const Login: React.FC = () => {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6 pt-20">
         <SEO title="Member Portal Account | Faryal FC" noIndex={true} />
         <div className="w-full max-w-md text-center">
-          <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-6 border-2 border-blue-600">
-            <img src={user.photoURL || ''} alt={user.displayName || ''} className="w-full h-full object-cover" />
+          <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-6 border-2 border-blue-600 bg-slate-900 flex items-center justify-center">
+            {user.photoURL ? (
+              <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-10 h-10 text-blue-500" />
+            )}
           </div>
           <h1 className="text-3xl font-black text-white italic tracking-tighter uppercase mb-2">
             WELCOME, {user.displayName?.split(' ')[0]}

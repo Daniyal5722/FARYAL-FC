@@ -186,7 +186,7 @@ export const ManageMedia: React.FC = () => {
               >
                 <div className="aspect-square w-full overflow-hidden bg-slate-900 relative">
                   <img
-                    src={item.url}
+                    src={item.url || '/logo.png'}
                     alt={item.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />

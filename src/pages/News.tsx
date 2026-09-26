@@ -81,7 +81,7 @@ export const NewsPage: React.FC = () => {
               >
                 <div className="aspect-[16/10] relative overflow-hidden bg-slate-950">
                   <img 
-                    src={article.image} 
+                    src={article.image || 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800&auto=format&fit=crop'} 
                     alt={article.title} 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                     referrerPolicy="no-referrer"

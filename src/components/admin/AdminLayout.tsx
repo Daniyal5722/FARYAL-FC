@@ -24,7 +24,8 @@ import {
   Search,
   ChevronRight,
   Sparkles,
-  Award
+  Award,
+  Layers
 } from 'lucide-react';
 import { useFirebase } from '../../contexts/FirebaseContext';
 import { auth } from '../../lib/firebase';
@@ -73,6 +74,7 @@ export const AdminLayout: React.FC = () => {
         { label: 'Players Squad', path: '/admin/players', icon: <Users size={18} /> },
         { label: 'Teams & Clubs', path: '/admin/teams', icon: <Shield size={18} /> },
         { label: 'Matches & Scores', path: '/admin/matches', icon: <Calendar size={18} /> },
+        { label: 'Match Formation', path: '/admin/formation', icon: <Layers size={18} /> },
         { label: 'League Standings', path: '/admin/standings', icon: <Trophy size={18} /> },
       ],
     },

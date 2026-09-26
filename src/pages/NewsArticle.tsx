@@ -100,7 +100,7 @@ export const NewsArticle: React.FC = () => {
 
           <div className="aspect-[16/9] rounded-3xl overflow-hidden border border-slate-800 mb-12 shadow-2xl">
             <img
-              src={article.image}
+              src={article.image || 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=800&auto=format&fit=crop'}
               alt={article.title}
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"

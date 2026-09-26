@@ -445,10 +445,10 @@ ${allPages
     app.put(`/api/${collection}/:id`, requireAdmin, async (req: any, res: any) => {
       try {
         validateBody(collection, req.body);
-        await db.collection(collection).doc(req.params.id).update({
+        await db.collection(collection).doc(req.params.id).set({
           ...req.body,
           updatedAt: FieldValue.serverTimestamp()
-        });
+        }, { merge: true });
         const doc = await db.collection(collection).doc(req.params.id).get();
         res.json({ id: doc.id, ...doc.data() });
       } catch (error) {

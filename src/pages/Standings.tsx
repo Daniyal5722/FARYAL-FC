@@ -83,7 +83,14 @@ export const Standings: React.FC = () => {
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
-                        <img src={team.logo} alt={team.name} className="w-8 h-8 object-contain" />
+                        <img
+                          src={team.logo || '/logo.png'}
+                          alt={team.name}
+                          className="w-8 h-8 object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/logo.png';
+                          }}
+                        />
                         <span className="text-lg font-black text-white uppercase italic tracking-tighter group-hover:text-blue-500 transition-colors">
                           {team.name}
                         </span>

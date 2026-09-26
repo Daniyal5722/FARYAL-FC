@@ -73,8 +73,15 @@ export const GlobalSearch: React.FC = () => {
                           onClick={() => setIsOpen(false)}
                           className="flex items-center gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-blue-500 transition-all group"
                         >
-                          <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800">
-                            <img src={player.image} alt={player.name} className="w-full h-full object-cover" />
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center">
+                            <img
+                              src={player.image || '/logo.png'}
+                              alt={player.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/logo.png';
+                              }}
+                            />
                           </div>
                           <div>
                             <p className="text-white font-black uppercase italic tracking-tighter group-hover:text-blue-500 transition-colors">{player.name}</p>

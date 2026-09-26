@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Users, Trophy, Calendar, BarChart3, Settings, Database, 
   ArrowRight, Download, Newspaper, Image as ImageIcon,
-  Palette, Shield, Sparkles, Activity, Clock, Plus, Loader2, Globe
+  Palette, Shield, Sparkles, Activity, Clock, Plus, Loader2, Globe, Layers
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { Player, Team, Match, News, ActivityLog } from '../../types';
@@ -94,8 +94,9 @@ export const AdminDashboard: React.FC = () => {
   const quickModules = [
     { title: 'SEO & Metadata', icon: Globe, count: 'Rank', link: '/admin/seo', color: 'bg-blue-600', desc: 'Google search tags, sitemap & OG cards' },
     { title: 'Players Squad', icon: Users, count: players.length, link: '/admin/players', color: 'bg-emerald-600', desc: 'Squad roster & statistics' },
-    { title: 'Teams & Clubs', icon: Trophy, count: teams.length, link: '/admin/teams', color: 'bg-indigo-600', desc: 'Opponent clubs & logos' },
+    { title: 'Match Formation', icon: Layers, count: 'Tactics', link: '/admin/formation', color: 'bg-cyan-600', desc: 'Starting XI lineup & tactical formations' },
     { title: 'Matches & Fixtures', icon: Calendar, count: matches.length, link: '/admin/matches', color: 'bg-orange-600', desc: 'Scores, lineups & fixtures' },
+    { title: 'Teams & Clubs', icon: Trophy, count: teams.length, link: '/admin/teams', color: 'bg-indigo-600', desc: 'Opponent clubs & logos' },
     { title: 'Theme Customizer', icon: Palette, count: 'Live', link: '/admin/theme', color: 'bg-purple-600', desc: 'Colors, typography & UI' },
     { title: 'News & Updates', icon: Newspaper, count: news.length, link: '/admin/news', color: 'bg-pink-600', desc: 'Club announcements & press' },
   ];

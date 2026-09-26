@@ -304,6 +304,7 @@ export interface ClubSettings {
   footer?: FooterConfig;
   seo?: SEOConfig;
   maintenance?: MaintenanceConfig;
+  formation?: FormationConfig;
 }
 
 export interface GalleryItem {
@@ -315,3 +316,19 @@ export interface GalleryItem {
 }
 
 export type FormationType = '4-4-2' | '4-3-3' | '4-2-3-1' | '3-5-2' | '3-4-3' | '5-3-2';
+
+export interface TacticalPillar {
+  title: string;
+  desc: string;
+}
+
+export interface FormationConfig {
+  defaultFormation: FormationType;
+  enabledFormations: FormationType[];
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  tacticalNotes?: string;
+  tacticalPillars?: TacticalPillar[];
+  lineup?: Record<string, string>; // key: `${formation}-${positionIndex}` -> playerId
+}

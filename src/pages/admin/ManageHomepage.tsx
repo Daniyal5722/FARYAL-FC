@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Layout, Save, ArrowUp, ArrowDown, Eye, EyeOff, Image as ImageIcon, Sparkles, Link as LinkIcon, Upload } from 'lucide-react';
+import { Layout, Save, ArrowUp, ArrowDown, Eye, EyeOff, Image as ImageIcon, Sparkles, Link as LinkIcon, Upload, RotateCcw } from 'lucide-react';
 import { useThemeSettings } from '../../contexts/ThemeSettingsContext';
 import { useToast } from '../../contexts/ToastContext';
 import { HeroConfig, HomepageSection } from '../../types';
+import { DEFAULT_HERO } from '../../data/defaultConfig';
 import { api } from '../../lib/api';
 
 export const ManageHomepage: React.FC = () => {
@@ -15,7 +16,14 @@ export const ManageHomepage: React.FC = () => {
     [...homepageSections].sort((a, b) => a.order - b.order)
   );
   const [saving, setSaving] = useState(false);
+  const [resettingHero, setResettingHero] = useState(false);
   const [uploadingHeroBg, setUploadingHeroBg] = useState(false);
+
+  useEffect(() => {
+    if (hero) {
+      setHeroForm(hero);
+    }
+  }, [hero]);
 
   const moveSection = (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
@@ -70,6 +78,19 @@ export const ManageHomepage: React.FC = () => {
     }
   };
 
+  const handleResetHeroToDefaults = async () => {
+    setResettingHero(true);
+    try {
+      setHeroForm(DEFAULT_HERO);
+      await updateSettings({ hero: DEFAULT_HERO });
+      success('Hero configuration reverted to initial default settings!');
+    } catch (err: any) {
+      toastError(err.message || 'Failed to reset hero settings');
+    } finally {
+      setResettingHero(false);
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-5xl">
       {/* Header */}
@@ -89,7 +110,7 @@ export const ManageHomepage: React.FC = () => {
         <button
           type="button"
           onClick={handleSaveAll}
-          disabled={saving}
+          disabled={saving || resettingHero}
           className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-blue-600/30 disabled:opacity-50"
         >
           {saving ? (
@@ -103,12 +124,12 @@ export const ManageHomepage: React.FC = () => {
 
       {/* Hero Section Config */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 gap-4">
           <h2 className="text-base font-black text-white uppercase tracking-tight flex items-center gap-2">
             <Sparkles className="text-blue-500" size={18} />
             Hero Banner Configuration
           </h2>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -118,6 +139,17 @@ export const ManageHomepage: React.FC = () => {
               />
               <span className="text-xs font-bold text-slate-300 uppercase">Visible</span>
             </label>
+
+            <button
+              type="button"
+              onClick={handleResetHeroToDefaults}
+              disabled={resettingHero || saving}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700/80 hover:border-slate-600 bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bold transition-all disabled:opacity-50"
+              title="Revert all hero form fields to the site's initial default configuration"
+            >
+              <RotateCcw size={13} className={resettingHero ? 'animate-spin' : ''} />
+              <span>Reset to Defaults</span>
+            </button>
           </div>
         </div>
 

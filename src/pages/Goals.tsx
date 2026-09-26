@@ -104,8 +104,15 @@ export const Goals: React.FC = () => {
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-slate-800 overflow-hidden">
-                          <img src={player.image || 'https://via.placeholder.com/150'} alt={player.name} className="w-full h-full object-cover" />
+                        <div className="w-10 h-10 rounded-full bg-slate-800 overflow-hidden flex items-center justify-center">
+                          <img
+                            src={player.image || '/logo.png'}
+                            alt={player.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/logo.png';
+                            }}
+                          />
                         </div>
                         <div>
                           <p className="text-white font-black uppercase italic tracking-tighter group-hover:text-blue-400 transition-colors">
