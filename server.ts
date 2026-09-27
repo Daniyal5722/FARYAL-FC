@@ -675,7 +675,7 @@ ${allPages
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true, hmr: false },
-      appType: "spa",
+      appType: "custom",
     });
     app.use(vite.middlewares);
 
@@ -687,6 +687,8 @@ ${allPages
       try {
         let template = await fs.readFile(path.resolve(process.cwd(), "index.html"), "utf-8");
         template = await vite.transformIndexHtml(url, template);
+        // Remove @vite/client injection because HMR is disabled in AI Studio iframe environment
+        template = template.replace(/<script\s+type="module"\s+src="\/@vite\/client"><\/script>\s*/gi, '');
         res.status(200).set({ "Content-Type": "text/html" }).end(template);
       } catch (e) {
         vite.ssrFixStacktrace(e as Error);

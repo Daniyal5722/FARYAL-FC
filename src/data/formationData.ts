@@ -68,9 +68,36 @@ export const FORMATIONS: Record<FormationType, FormationDefinition> = {
       { x: 38, y: 22, label: 'ST' }, { x: 62, y: 22, label: 'ST' },
     ],
   },
+  '6-player': {
+    name: '6-player',
+    positions: [
+      { x: 50, y: 91, label: 'GK' },
+      { x: 30, y: 75, label: 'CB' }, { x: 70, y: 75, label: 'CB' },
+      { x: 30, y: 50, label: 'CM' }, { x: 70, y: 50, label: 'CM' },
+      { x: 50, y: 25, label: 'ST' },
+    ],
+  },
+  '8-player': {
+    name: '8-player',
+    positions: [
+      { x: 50, y: 91, label: 'GK' },
+      { x: 25, y: 75, label: 'CB' }, { x: 75, y: 75, label: 'CB' },
+      { x: 25, y: 50, label: 'CM' }, { x: 50, y: 50, label: 'CDM' }, { x: 75, y: 50, label: 'CM' },
+      { x: 35, y: 25, label: 'ST' }, { x: 65, y: 25, label: 'ST' },
+    ],
+  },
+  '11-player': {
+    name: '11-player',
+    positions: [
+      { x: 50, y: 91, label: 'GK' },
+      { x: 18, y: 76, label: 'LB' }, { x: 38, y: 78, label: 'CB' }, { x: 62, y: 78, label: 'CB' }, { x: 82, y: 76, label: 'RB' },
+      { x: 32, y: 56, label: 'CM' }, { x: 50, y: 64, label: 'CDM' }, { x: 68, y: 56, label: 'CM' },
+      { x: 20, y: 24, label: 'LW' }, { x: 50, y: 18, label: 'ST' }, { x: 80, y: 24, label: 'RW' },
+    ],
+  },
 };
 
-export const ALL_FORMATION_TYPES: FormationType[] = ['4-4-2', '4-3-3', '4-2-3-1', '3-5-2', '3-4-3', '5-3-2'];
+export const ALL_FORMATION_TYPES: FormationType[] = ['4-4-2', '4-3-3', '4-2-3-1', '3-5-2', '3-4-3', '5-3-2', '6-player', '8-player', '11-player'];
 
 /**
  * Checks if a player's position (e.g. "Goalkeeper", "Defender", "Midfielder", "Forward", "CB", "ST")

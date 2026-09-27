@@ -15,6 +15,9 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        workbox: {
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB
+        },
         devOptions: {
           enabled: false, // Keep disabled in dev to avoid conflicts with custom server
         },
@@ -44,6 +47,9 @@ export default defineConfig(() => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       },
+    },
+    define: {
+      'import.meta.hot': 'false',
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

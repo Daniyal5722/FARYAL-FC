@@ -52,6 +52,31 @@
       }
     }
     </script>
+    <script>
+      // Suppress Vite HMR connection warnings in AI Studio preview iframe where HMR is disabled
+      window.__vite_plugin_react_preamble_installed__ = true;
+      (function() {
+        const origWarn = console.warn;
+        const origError = console.error;
+        const isViteHmrMsg = (args) => {
+          const str = args.map(a => (typeof a === 'string' ? a : (a && a.message) || '')).join(' ');
+          return str.includes('[vite]') || str.includes('WebSocket') || str.includes('vite-ping');
+        };
+        console.warn = function(...args) {
+          if (isViteHmrMsg(args)) return;
+          origWarn.apply(console, args);
+        };
+        console.error = function(...args) {
+          if (isViteHmrMsg(args)) return;
+          origError.apply(console, args);
+        };
+        window.addEventListener('unhandledrejection', (event) => {
+          if (isViteHmrMsg([event.reason])) {
+            event.preventDefault();
+          }
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -173,6 +173,11 @@ export interface HeroConfig {
   subtitle: string;
   description: string;
   backgroundImage: string;
+  backgroundType?: 'image' | 'video';
+  backgroundVideo?: string;
+  videoPoster?: string;
+  videoOverlayTint?: string;
+  videoOverlayOpacity?: number;
   ctaText: string;
   ctaLink: string;
   secondaryCtaText: string;
@@ -315,7 +320,7 @@ export interface GalleryItem {
   date?: string;
 }
 
-export type FormationType = '4-4-2' | '4-3-3' | '4-2-3-1' | '3-5-2' | '3-4-3' | '5-3-2';
+export type FormationType = '4-4-2' | '4-3-3' | '4-2-3-1' | '3-5-2' | '3-4-3' | '5-3-2' | '6-player' | '8-player' | '11-player';
 
 export interface TacticalPillar {
   title: string;
